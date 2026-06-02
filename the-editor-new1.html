@@ -1,0 +1,1353 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="The Editor">
+<meta name="theme-color" content="#1A1614">
+<title>The Editor ® — Código Elegante ™</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=Jost:wght@100;200;300;400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --ink: #1A1614; --ink-soft: #2E2825;
+  --beige: #EDE8E1; --beige-mid: #E0D9CF; --beige-dark: #C8BFB2;
+  --cream: #F7F4EF; --sand: #A89888; --gold: #B8976A; --gold-light: #D4B896;
+  --white: #FDFBF8;
+  --yes: #8AA47A; --no: #C47A7A; --maybe: #B8976A;
+}
+html, body { height: 100%; overflow: hidden; background: var(--ink); }
+body { font-family: 'Jost', sans-serif; -webkit-tap-highlight-color: transparent; -webkit-font-smoothing: antialiased; }
+
+/* ===== WELCOME ===== */
+#ws { position: fixed; inset: 0; background: var(--ink); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; z-index: 500; transition: opacity 0.7s, transform 0.7s; }
+#ws.hidden { opacity: 0; pointer-events: none; transform: translateY(-16px); }
+.w-grain { position: absolute; inset: 0; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E"); pointer-events: none; }
+.w-rule { width: 100%; max-width: 300px; height: 1px; background: linear-gradient(90deg,transparent,var(--gold),transparent); }
+.w-rule.t { margin-bottom: 2.2rem; } .w-rule.b { margin-top: 2.2rem; }
+.w-tag { font-family: 'Jost', sans-serif; font-weight: 100; font-size: 0.52rem; letter-spacing: 0.55em; text-transform: uppercase; color: var(--gold); margin-bottom: 1.2rem; text-align: center; }
+.w-logo { font-family: 'Cormorant Garamond', serif; font-weight: 300; font-size: clamp(3.8rem,14vw,6rem); color: var(--cream); line-height: 0.85; text-align: center; margin-bottom: 0.4rem; }
+.w-logo em { font-style: italic; color: var(--gold-light); }
+.w-logo sup { font-size: 0.35em; vertical-align: super; color: var(--gold); font-style: normal; font-weight: 200; }
+.w-by { font-family: 'Jost', sans-serif; font-weight: 100; font-size: 0.52rem; letter-spacing: 0.5em; text-transform: uppercase; color: var(--sand); text-align: center; margin-bottom: 0.3rem; }
+.w-site { font-family: 'Jost', sans-serif; font-weight: 100; font-size: 0.46rem; letter-spacing: 0.38em; text-transform: uppercase; color: rgba(168,152,136,0.4); text-align: center; margin-bottom: 2.8rem; }
+.w-prompt { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1rem; color: var(--sand); margin-bottom: 1rem; display: block; text-align: center; }
+.w-input { width: 100%; max-width: 280px; background: transparent; border: none; border-bottom: 1px solid rgba(184,151,106,0.35); padding: 0.7rem 0; font-family: 'Cormorant Garamond', serif; font-size: 1.8rem; font-weight: 300; color: var(--cream); text-align: center; outline: none; transition: border-color 0.3s; display: block; margin: 0 auto; }
+.w-input::placeholder { color: rgba(168,152,136,0.22); font-style: italic; }
+.w-input:focus { border-bottom-color: var(--gold); }
+.w-btn { margin: 2rem auto 0; display: block; background: transparent; border: 1px solid rgba(184,151,106,0.45); color: var(--gold); font-family: 'Jost', sans-serif; font-weight: 200; font-size: 0.58rem; letter-spacing: 0.42em; text-transform: uppercase; padding: 0.9rem 3rem; cursor: pointer; transition: all 0.3s; }
+.w-btn:active { background: var(--gold); color: var(--ink); }
+.w-foot { position: absolute; bottom: max(env(safe-area-inset-bottom),1.5rem); font-family: 'Jost', sans-serif; font-weight: 100; font-size: 0.42rem; letter-spacing: 0.32em; text-transform: uppercase; color: rgba(168,152,136,0.2); text-align: center; }
+
+/* ===== APP ===== */
+#app { height: 100vh; height: 100dvh; display: flex; flex-direction: column; opacity: 0; transition: opacity 0.5s; }
+#app.on { opacity: 1; }
+
+/* HEADER */
+.hdr { background: var(--ink); padding: max(env(safe-area-inset-top),0.8rem) 1.2rem 0.75rem; flex-shrink: 0; display: flex; justify-content: space-between; align-items: flex-end; }
+.hdr-tag { font-family: 'Jost', sans-serif; font-weight: 100; font-size: 0.44rem; letter-spacing: 0.38em; text-transform: uppercase; color: var(--gold); display: block; margin-bottom: 0.15rem; }
+.hdr-logo { font-family: 'Cormorant Garamond', serif; font-weight: 300; font-size: clamp(1.8rem,7vw,2.4rem); color: var(--cream); line-height: 0.9; }
+.hdr-logo em { font-style: italic; color: var(--gold-light); }
+.hdr-logo sup { font-size: 0.35em; vertical-align: super; color: var(--gold); font-style: normal; }
+.hdr-right { display: flex; flex-direction: column; align-items: flex-end; gap: 0.3rem; }
+.hdr-name { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 0.9rem; color: var(--sand); }
+.hdr-change { background: none; border: 1px solid rgba(184,151,106,0.18); color: rgba(184,151,106,0.5); font-family: 'Jost', sans-serif; font-weight: 200; font-size: 0.36rem; letter-spacing: 0.2em; text-transform: uppercase; padding: 0.2rem 0.4rem; cursor: pointer; }
+
+/* CONTENT */
+.cnt { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; background: var(--beige); }
+.cnt::-webkit-scrollbar { width: 2px; }
+.cnt::-webkit-scrollbar-thumb { background: var(--beige-dark); }
+.sc { display: none; }
+.sc.on { display: block; }
+
+/* BOTTOM NAV */
+.bnav { background: var(--ink); display: flex; padding-bottom: max(env(safe-area-inset-bottom),0px); flex-shrink: 0; border-top: 1px solid rgba(184,151,106,0.1); }
+.bn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0.6rem 0.2rem 0.7rem; cursor: pointer; background: none; border: none; gap: 0.25rem; transition: all 0.2s; }
+.bn-icon { font-size: 1.05rem; opacity: 0.3; transition: all 0.2s; line-height: 1; }
+.bn-label { font-family: 'Jost', sans-serif; font-weight: 300; font-size: 0.37rem; letter-spacing: 0.15em; text-transform: uppercase; color: rgba(212,184,150,0.3); transition: all 0.2s; }
+.bn.on .bn-icon { opacity: 1; }
+.bn.on .bn-label { color: var(--gold-light); font-weight: 400; }
+
+/* SHARED */
+.sec-pad { padding: 1.2rem 1rem 5rem; }
+.sec-eye { font-family: 'Jost', sans-serif; font-weight: 100; font-size: 0.5rem; letter-spacing: 0.45em; text-transform: uppercase; color: var(--sand); text-align: center; margin-bottom: 0.2rem; }
+.sec-title { font-family: 'Cormorant Garamond', serif; font-weight: 300; font-size: 1.6rem; color: var(--ink); text-align: center; margin-bottom: 1rem; }
+.rule-gold { height: 1px; background: linear-gradient(90deg,transparent,var(--gold),transparent); margin: 0.8rem 0; }
+.pb { text-align: center; padding: 1.5rem 0 0.5rem; font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 0.7rem; color: rgba(168,152,136,0.25); }
+
+/* ===== TU EDIT ===== */
+.edit-closet-bar { display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 1rem; background: var(--ink); margin-bottom: 3px; }
+.ecb-name { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 0.9rem; color: var(--sand); }
+.ecb-btn { background: none; border: 1px solid rgba(184,151,106,0.25); color: rgba(184,151,106,0.6); font-family: 'Jost', sans-serif; font-weight: 200; font-size: 0.38rem; letter-spacing: 0.2em; text-transform: uppercase; padding: 0.22rem 0.5rem; cursor: pointer; }
+
+.eg { display: grid; grid-template-columns: repeat(3,1fr); gap: 3px; background: var(--ink); border: 2px solid var(--ink); }
+.cl { position: relative; aspect-ratio: 3/4; overflow: hidden; transition: all 0.2s; cursor: pointer; }
+.cl img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
+.cl-sil { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+.cl-sil svg { width: 52px; height: 66px; }
+.cl-tag { position: absolute; bottom: 0; left: 0; right: 0; font-family: 'Jost', sans-serif; font-weight: 400; font-size: 0.5rem; letter-spacing: 0.2em; text-transform: uppercase; padding: 0.28rem 0; text-align: center; pointer-events: none; }
+.cl.sel { box-shadow: inset 0 0 0 3.5px var(--gold); z-index: 2; }
+.cl.sel .cl-tag { background: var(--gold) !important; color: var(--ink) !important; font-weight: 700; }
+.cl.dim { opacity: 0.1; }
+
+/* color check button */
+.cc-wrap { padding: 0.8rem 1rem 0; }
+.cc-btn { width: 100%; background: var(--ink); border: 1px solid rgba(184,151,106,0.4); color: var(--gold-light); font-family: 'Jost', sans-serif; font-weight: 200; font-size: 0.56rem; letter-spacing: 0.28em; text-transform: uppercase; padding: 0.9rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
+.cc-btn-sub { text-align: center; margin-top: 0.3rem; font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 0.7rem; color: rgba(168,152,136,0.4); }
+.sel-hint { text-align: center; padding: 0.5rem 0 0; font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 0.8rem; color: var(--sand); min-height: 1.4rem; }
+
+/* ===== CLOSET MODAL ===== */
+.modal { position: fixed; inset: 0; z-index: 300; display: none; flex-direction: column; background: var(--ink); }
+.modal.on { display: flex; }
+.modal-hd { padding: max(env(safe-area-inset-top),1rem) 1.2rem 0.8rem; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; border-bottom: 1px solid rgba(184,151,106,0.1); }
+.modal-title { font-family: 'Cormorant Garamond', serif; font-weight: 300; font-style: italic; font-size: 1.3rem; color: var(--cream); }
+.modal-x { background: none; border: 1px solid rgba(184,151,106,0.22); color: var(--sand); width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.8rem; }
+.modal-bd { flex: 1; overflow-y: auto; padding: 1rem; }
+
+/* Closet list */
+.cl-list { display: flex; flex-direction: column; gap: 3px; margin-bottom: 1rem; }
+.cl-item { display: flex; align-items: center; background: var(--ink-soft); padding: 0.75rem 1rem; gap: 0.6rem; cursor: pointer; border-left: 2.5px solid transparent; }
+.cl-item.active { border-left-color: var(--gold); }
+.cl-item-name { font-family: 'Cormorant Garamond', serif; font-size: 1rem; flex: 1; color: var(--cream); }
+.cl-item-count { font-family: 'Jost', sans-serif; font-weight: 200; font-size: 0.42rem; letter-spacing: 0.2em; color: var(--sand); }
+.cl-item-del { background: none; border: none; color: rgba(168,152,136,0.3); font-size: 0.7rem; cursor: pointer; padding: 0.2rem 0.3rem; }
+.cl-new-btn { width: 100%; background: transparent; border: 1px solid rgba(184,151,106,0.3); color: var(--gold); font-family: 'Jost', sans-serif; font-weight: 200; font-size: 0.54rem; letter-spacing: 0.32em; text-transform: uppercase; padding: 0.85rem; cursor: pointer; margin-top: 0.5rem; }
+.cl-new-btn:active { background: rgba(184,151,106,0.08); }
+
+/* Closet grid */
+.cg-title { font-family: 'Jost', sans-serif; font-weight: 200; font-size: 0.44rem; letter-spacing: 0.35em; text-transform: uppercase; color: var(--gold); margin-bottom: 0.6rem; }
+.cg { display: grid; grid-template-columns: repeat(3,1fr); gap: 4px; }
+.cg-slot { background: var(--cream); border: 1px dashed var(--beige-dark); display: flex; flex-direction: column; align-items: center; min-height: 120px; cursor: pointer; position: relative; overflow: hidden; transition: transform 0.15s; }
+.cg-slot:active { transform: scale(0.97); }
+.cg-img-wrap { width: 100%; height: 75px; overflow: hidden; flex-shrink: 0; }
+.cg-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cg-sil { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+.cg-sil svg { width: 40px; height: 52px; }
+.cg-info { padding: 0.25rem 0.2rem 0.3rem; text-align: center; width: 100%; }
+.cg-role { font-family: 'Jost', sans-serif; font-weight: 400; font-size: 0.48rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-soft); display: block; }
+.cg-action { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 0.46rem; color: var(--beige-dark); display: block; }
+.cg-ai { position: absolute; top: 3px; right: 3px; background: var(--gold); color: var(--ink); font-family: 'Jost', sans-serif; font-weight: 300; font-size: 0.28rem; letter-spacing: 0.1em; padding: 0.05rem 0.18rem; text-transform: uppercase; }
+.cg-del { position: absolute; top: 3px; left: 3px; background: rgba(26,22,20,0.7); border: none; color: rgba(212,184,150,0.7); font-size: 0.5rem; width: 16px; height: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+
+/* New closet sheet */
+.sheet-ov { position: fixed; inset: 0; background: rgba(26,22,20,0.8); z-index: 400; display: none; align-items: flex-end; justify-content: center; }
+.sheet-ov.on { display: flex; }
+.sheet-bx { background: var(--ink-soft); width: 100%; max-width: 480px; padding: 1.5rem 1.5rem max(env(safe-area-inset-bottom),2rem); animation: slideup 0.3s cubic-bezier(0.16,1,0.3,1); }
+@keyframes slideup { from{transform:translateY(100%)}to{transform:translateY(0)} }
+.sheet-bar { width: 32px; height: 2px; background: var(--sand); margin: 0 auto 1.5rem; opacity: 0.3; }
+.sheet-title { font-family: 'Cormorant Garamond', serif; font-weight: 300; font-size: 1.2rem; color: var(--cream); text-align: center; margin-bottom: 1rem; }
+.sheet-in { width: 100%; background: transparent; border: none; border-bottom: 1px solid rgba(168,152,136,0.3); padding: 0.6rem 0; font-family: 'Cormorant Garamond', serif; font-size: 1.4rem; font-weight: 300; color: var(--cream); text-align: center; outline: none; }
+.sheet-in:focus { border-bottom-color: var(--gold); }
+.sheet-in::placeholder { color: rgba(168,152,136,0.25); font-style: italic; }
+.sheet-btn { margin-top: 1.5rem; width: 100%; background: transparent; border: 1px solid rgba(184,151,106,0.38); color: var(--gold); font-family: 'Jost', sans-serif; font-weight: 300; font-size: 0.56rem; letter-spacing: 0.35em; text-transform: uppercase; padding: 0.85rem; cursor: pointer; }
+.sheet-btn:active { background: var(--gold); color: var(--ink); }
+.sheet-cancel { display: block; margin-top: 0.7rem; width: 100%; background: none; border: none; color: rgba(168,152,136,0.35); font-family: 'Jost', sans-serif; font-size: 0.44rem; letter-spacing: 0.25em; text-transform: uppercase; padding: 0.4rem; cursor: pointer; }
+
+.line-picker-wrap { padding: 4px 0 0; min-height: 4px; }
+.lp-btn { flex: 1; min-width: 60px; padding: 0.42rem 0.3rem; font-family: 'Jost', sans-serif; font-weight: 300; font-size: 0.42rem; letter-spacing: 0.14em; text-transform: uppercase; background: var(--cream); border: none; cursor: pointer; text-align: center; border-top: 2.5px solid transparent; }
+.lp-btn span { display: block; color: var(--ink); }
+.lp-btn small { display: block; font-size: 0.32rem; color: var(--sand); font-weight: 100; }
+.lp-btn:active { background: var(--ink); }
+.lp-btn:active span { color: var(--gold-light); }
+/* ===== TENIDAS ===== */
+.ten-sc { padding: 1rem 0 5rem; }
+.ten-hd { text-align: center; padding: 1rem 1rem 1rem; border-bottom: 1px solid var(--beige-dark); }
+.ten-n { font-family: 'Cormorant Garamond', serif; font-weight: 300; font-size: 4.5rem; color: var(--ink); line-height: 1; display: block; }
+.ten-s { font-family: 'Jost', sans-serif; font-weight: 200; font-size: 0.5rem; letter-spacing: 0.42em; text-transform: uppercase; color: var(--sand); }
+.ten-sec-hd { display: flex; align-items: center; gap: 0.5rem; padding: 0 1rem; margin: 1rem 0 0.4rem; }
+.ten-line { height: 1px; flex: 1; background: var(--beige-dark); }
+.ten-dot { width: 4px; height: 4px; border-radius: 50%; flex-shrink: 0; }
+.ten-lbl { font-family: 'Jost', sans-serif; font-weight: 200; font-size: 0.48rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--sand); }
+.lk-row { display: flex; align-items: center; background: var(--cream); margin: 0 0 3px; cursor: pointer; border-left: 2.5px solid transparent; padding: 0.5rem 1rem; gap: 0.6rem; }
+.lk-row:active { background: var(--beige-mid); }
+.lk-num { font-family: 'Cormorant Garamond', serif; font-size: 0.9rem; font-weight: 300; color: var(--gold); min-width: 18px; text-align: right; flex-shrink: 0; }
+.lk-thumbs { display: flex; gap: 3px; align-items: center; flex-shrink: 0; }
+.lk-thumb-img { width: 24px; height: 30px; object-fit: cover; display: block; }
+.lk-thumb-sil { width: 24px; height: 30px; display: flex; align-items: center; justify-content: center; }
+.lk-thumb-sil svg { width: 16px; height: 22px; }
+.lk-plus { font-size: 0.38rem; color: var(--gold-light); padding: 0 1px; }
+.lk-roles { flex: 1; display: flex; gap: 3px; flex-wrap: wrap; }
+.lk-role { font-family: 'Jost', sans-serif; font-weight: 300; font-size: 0.42rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--sand); background: var(--beige); padding: 0.07rem 0.25rem; }
+.lk-arr { font-size: 0.55rem; color: var(--beige-dark); flex-shrink: 0; }
+
+/* Look modal */
+.lm { position: fixed; inset: 0; z-index: 300; display: none; flex-direction: column; background: var(--ink); }
+.lm.on { display: flex; }
+.lm-hd { padding: max(env(safe-area-inset-top),1rem) 1.2rem 0.8rem; display: flex; justify-content: space-between; align-items: flex-start; flex-shrink: 0; border-bottom: 1px solid rgba(184,151,106,0.1); }
+.lm-info { flex: 1; }
+.lm-eyebrow { font-family: 'Jost', sans-serif; font-weight: 200; font-size: 0.44rem; letter-spacing: 0.4em; text-transform: uppercase; color: var(--gold); display: block; margin-bottom: 0.15rem; }
+.lm-name { font-family: 'Cormorant Garamond', serif; font-weight: 300; font-style: italic; font-size: 1.3rem; color: var(--cream); }
+.lm-x { background: none; border: 1px solid rgba(184,151,106,0.22); color: var(--sand); width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.8rem; flex-shrink: 0; margin-left: 0.8rem; }
+.lm-bd { flex: 1; overflow-y: auto; padding: 1rem 1rem 3rem; display: flex; flex-direction: column; gap: 0.6rem; }
+.lm-num-big { font-family: 'Cormorant Garamond', serif; font-size: 4rem; font-weight: 300; color: rgba(184,151,106,0.06); text-align: center; line-height: 1; }
+.lm-pieces { display: flex; flex-direction: column; gap: 4px; }
+.lm-piece { background: var(--ink-soft); display: flex; align-items: center; gap: 0.85rem; padding: 0.7rem 1rem; position: relative; }
+.lm-piece::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2.5px; }
+.lm-piece.top::before { background: #C4A882; }
+.lm-piece.bottom::before { background: #7A9BAA; }
+.lm-piece.layer::before { background: #8AA47A; }
+.lm-pv { width: 66px; height: 76px; flex-shrink: 0; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+.lm-pv img { width: 100%; height: 100%; object-fit: cover; }
+.lm-pv svg { width: 44px; height: 56px; }
+.lm-pi { flex: 1; }
+.lm-pr { font-family: 'Jost', sans-serif; font-weight: 200; font-size: 0.42rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold); display: block; margin-bottom: 0.2rem; }
+.lm-pn { font-family: 'Cormorant Garamond', serif; font-size: 0.92rem; font-weight: 300; color: var(--cream); }
+.lm-ft { text-align: center; margin-top: 0.6rem; padding-top: 0.6rem; border-top: 1px solid rgba(184,151,106,0.07); }
+.lm-ft span { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 0.78rem; color: rgba(212,184,150,0.3); }
+
+/* ===== SEMANA ===== */
+.sem-sc { padding: 1rem 1rem 5rem; }
+.sem-hd { text-align: center; margin-bottom: 1rem; }
+.sem-title { font-family: 'Cormorant Garamond', serif; font-weight: 300; font-size: 1.5rem; color: var(--ink); }
+.sem-sub { font-family: 'Jost', sans-serif; font-weight: 200; font-size: 0.46rem; letter-spacing: 0.35em; text-transform: uppercase; color: var(--sand); }
+.sem-days { display: flex; flex-direction: column; gap: 3px; }
+.sem-day { display: flex; align-items: stretch; background: var(--cream); cursor: pointer; min-height: 80px; }
+.sem-day:active { background: var(--beige-mid); }
+.sem-day-lbl { width: 60px; background: var(--ink); display: flex; flex-direction: column; align-items: center; justify-content: center; flex-shrink: 0; padding: 0.5rem 0.3rem; }
+.sem-day-name { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 0.88rem; color: var(--gold-light); display: block; }
+.sem-day-num { font-family: 'Jost', sans-serif; font-weight: 100; font-size: 0.38rem; letter-spacing: 0.2em; color: var(--sand); text-transform: uppercase; display: block; margin-top: 0.15rem; }
+.sem-day-look { flex: 1; display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.7rem; }
+.sem-day-thumbs { display: flex; gap: 2px; flex-shrink: 0; }
+.sem-day-thumb { width: 46px; height: 56px; object-fit: cover; display: block; }
+.sem-day-sil { width: 46px; height: 56px; display: flex; align-items: center; justify-content: center; }
+.sem-day-sil svg { width: 28px; height: 38px; }
+.sem-day-info { flex: 1; }
+.sem-day-look-num { font-family: 'Jost', sans-serif; font-weight: 200; font-size: 0.42rem; letter-spacing: 0.28em; text-transform: uppercase; color: var(--sand); display: block; margin-bottom: 0.15rem; }
+.sem-day-roles { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 0.82rem; color: var(--ink); }
+.sem-day-arr { font-size: 0.55rem; color: var(--beige-dark); flex-shrink: 0; }
+.sem-day.empty .sem-day-look { justify-content: center; }
+.sem-day.empty .sem-empty-txt { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 0.8rem; color: var(--beige-dark); }
+
+/* Look picker for semana */
+.lk-picker { position: fixed; inset: 0; z-index: 400; background: rgba(26,22,20,0.88); display: none; flex-direction: column; }
+.lk-picker.on { display: flex; }
+.lk-picker-hd { background: var(--ink); padding: max(env(safe-area-inset-top),1rem) 1.2rem 0.8rem; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+.lk-picker-title { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1.2rem; color: var(--cream); }
+.lk-picker-x { background: none; border: 1px solid rgba(184,151,106,0.22); color: var(--sand); width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.8rem; }
+.lk-picker-bd { flex: 1; overflow-y: auto; background: var(--beige); padding: 0.5rem 0 3rem; }
+
+/* ===== ASESORA ===== */
+.ases-sc { padding: 1.2rem 1rem 5rem; }
+.ases-intro { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 0.95rem; color: var(--sand); text-align: center; margin-bottom: 1.2rem; line-height: 1.6; }
+.ases-input-wrap { position: relative; margin-bottom: 0.5rem; }
+.ases-input { width: 100%; background: var(--cream); border: 1px solid var(--beige-dark); padding: 0.9rem 3.5rem 0.9rem 1rem; font-family: 'Cormorant Garamond', serif; font-size: 1rem; color: var(--ink); outline: none; resize: none; min-height: 60px; line-height: 1.4; }
+.ases-input:focus { border-color: var(--gold); }
+.ases-input::placeholder { color: var(--beige-dark); font-style: italic; }
+.ases-send { position: absolute; right: 0.7rem; bottom: 0.7rem; background: var(--gold); border: none; color: var(--ink); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.9rem; }
+.ases-send:active { background: var(--gold-light); }
+.ases-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1rem; }
+.ases-chip { background: var(--cream); border: 1px solid var(--beige-dark); color: var(--sand); font-family: 'Jost', sans-serif; font-weight: 200; font-size: 0.44rem; letter-spacing: 0.15em; text-transform: uppercase; padding: 0.38rem 0.7rem; cursor: pointer; transition: all 0.2s; }
+.ases-chip:active { background: var(--ink); color: var(--gold-light); border-color: var(--gold); }
+.ases-result { margin-top: 1rem; display: flex; flex-direction: column; gap: 8px; }
+.ases-look-card { background: var(--cream); overflow: hidden; }
+.alc-hd { background: var(--ink); padding: 0.6rem 0.9rem; display: flex; justify-content: space-between; align-items: center; }
+.alc-num { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 0.88rem; color: var(--gold-light); }
+.alc-label { font-family: 'Jost', sans-serif; font-weight: 200; font-size: 0.4rem; letter-spacing: 0.28em; text-transform: uppercase; color: var(--sand); }
+.alc-thumbs { display: flex; gap: 3px; padding: 0.5rem; }
+.alc-thumb { width: 72px; height: 86px; object-fit: cover; display: block; }
+.alc-sil { width: 72px; height: 86px; display: flex; align-items: center; justify-content: center; }
+.alc-sil svg { width: 44px; height: 56px; }
+.alc-why { padding: 0.5rem 0.9rem 0.8rem; font-family: 'Cormorant Garamond', serif; font-size: 0.92rem; color: var(--ink); line-height: 1.6; border-top: 1px solid var(--beige-dark); }
+.ases-loading { text-align: center; padding: 2rem 0; }
+.ases-loading-txt { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 0.9rem; color: var(--sand); }
+.ases-empty { text-align: center; padding: 2rem 0; }
+.ases-empty-icon { font-size: 1.8rem; opacity: 0.2; display: block; margin-bottom: 0.5rem; }
+.ases-empty-txt { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 0.9rem; color: var(--sand); }
+
+/* ===== COLOR CHECK ===== */
+.cc-modal { position: fixed; inset: 0; z-index: 300; display: none; flex-direction: column; background: var(--ink); }
+.cc-modal.on { display: flex; }
+.cc-modal-hd { padding: max(env(safe-area-inset-top),1rem) 1.2rem 0.8rem; display: flex; justify-content: space-between; align-items: flex-start; flex-shrink: 0; border-bottom: 1px solid rgba(184,151,106,0.1); }
+.cc-modal-title { font-family: 'Cormorant Garamond', serif; font-weight: 300; font-style: italic; font-size: 1.3rem; color: var(--cream); }
+.cc-modal-x { background: none; border: 1px solid rgba(184,151,106,0.22); color: var(--sand); width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.8rem; }
+.cc-modal-bd { flex: 1; overflow-y: auto; }
+.cc-step { padding: 1rem 1rem 3rem; }
+.cc-guide { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 0.95rem; color: var(--sand); text-align: center; margin-bottom: 0.8rem; line-height: 1.5; min-height: 2.5rem; }
+.cc-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 3px; background: var(--ink-soft); margin-bottom: 1rem; }
+.cc-cell { position: relative; aspect-ratio: 3/4; overflow: hidden; cursor: pointer; }
+.cc-cell img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cc-cell-sil { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+.cc-cell-sil svg { width: 44px; height: 56px; }
+.cc-cell-tag { position: absolute; bottom: 0; left: 0; right: 0; font-family: 'Jost', sans-serif; font-weight: 400; font-size: 0.42rem; letter-spacing: 0.18em; text-transform: uppercase; padding: 0.2rem 0; text-align: center; }
+.cc-cell.selected { box-shadow: inset 0 0 0 3px var(--gold); }
+.cc-cell.selected::after { content: '✦'; position: absolute; top: 4px; right: 5px; color: var(--gold); font-size: 0.7rem; text-shadow: 0 0 6px rgba(26,22,20,1); }
+.cc-cell.faded { opacity: 0.2; pointer-events: none; }
+.cc-go { width: 100%; background: var(--gold); border: none; color: var(--ink); font-family: 'Jost', sans-serif; font-weight: 400; font-size: 0.62rem; letter-spacing: 0.28em; text-transform: uppercase; padding: 1.1rem; cursor: pointer; margin-bottom: 0.5rem; }
+.cc-go:active { background: var(--gold-light); }
+.cc-go.off { background: rgba(184,151,106,0.1); color: rgba(184,151,106,0.3); pointer-events: none; }
+.cc-cancel { display: block; width: 100%; background: none; border: none; color: rgba(168,152,136,0.3); font-family: 'Jost', sans-serif; font-size: 0.44rem; letter-spacing: 0.25em; text-transform: uppercase; padding: 0.5rem; cursor: pointer; text-align: center; }
+/* Palette */
+.pal-modal { position: fixed; inset: 0; z-index: 500; background: rgba(26,22,20,0.88); display: none; align-items: flex-end; justify-content: center; }
+.pal-modal.on { display: flex; }
+.pal-bx { background: var(--ink-soft); width: 100%; max-width: 480px; padding: 1.2rem 1rem max(env(safe-area-inset-bottom),2rem); animation: slideup 0.3s cubic-bezier(0.16,1,0.3,1); }
+.pal-title { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1rem; color: var(--cream); text-align: center; margin-bottom: 0.15rem; }
+.pal-sub { font-family: 'Jost', sans-serif; font-weight: 200; font-size: 0.42rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--sand); text-align: center; margin-bottom: 0.9rem; }
+.pal-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 5px; margin-bottom: 0.8rem; }
+.pal-swatch { width: 100%; aspect-ratio: 1; border-radius: 2px; cursor: pointer; border: 2px solid transparent; transition: all 0.15s; }
+.pal-swatch:active { transform: scale(0.93); }
+.pal-swatch.picked { border-color: var(--gold); }
+.pal-name { font-family: 'Jost', sans-serif; font-size: 0.3rem; letter-spacing: 0.08em; text-transform: uppercase; text-align: center; margin-top: 2px; color: var(--sand); }
+.pal-cancel { display: block; width: 100%; background: none; border: none; color: rgba(168,152,136,0.35); font-family: 'Jost', sans-serif; font-size: 0.42rem; letter-spacing: 0.25em; text-transform: uppercase; padding: 0.5rem; cursor: pointer; text-align: center; }
+/* CC Result */
+.cc-result { padding: 1.2rem 1rem 3rem; }
+.cc-verdict { text-align: center; margin-bottom: 1.2rem; padding-bottom: 1rem; border-bottom: 1px solid rgba(184,151,106,0.1); }
+.cc-vdot { width: 10px; height: 10px; border-radius: 50%; margin: 0 auto 0.5rem; }
+.cc-vlbl { font-family: 'Jost', sans-serif; font-weight: 200; font-size: 0.44rem; letter-spacing: 0.48em; text-transform: uppercase; display: block; margin-bottom: 0.3rem; }
+.cc-vtitle { font-family: 'Cormorant Garamond', serif; font-weight: 300; font-size: 1.5rem; color: var(--cream); line-height: 1.1; }
+.cc-prendas { display: flex; gap: 4px; justify-content: center; margin-bottom: 1rem; }
+.cc-prenda { flex: 0 0 auto; }
+.cc-prenda img { width: 72px; height: 88px; object-fit: cover; display: block; }
+.cc-prenda-sil { width: 72px; height: 88px; display: flex; align-items: center; justify-content: center; }
+.cc-prenda-sil svg { width: 44px; height: 56px; }
+.cc-prenda-role { font-family: 'Jost', sans-serif; font-weight: 200; font-size: 0.36rem; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(168,152,136,0.5); text-align: center; margin-top: 0.18rem; }
+.cc-block { background: var(--ink-soft); padding: 0.9rem 1rem; margin-bottom: 3px; position: relative; }
+.cc-block::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2.5px; }
+.cc-block.why::before { background: var(--gold); }
+.cc-block.alt::before { background: #7A9BAA; }
+.cc-blbl { font-family: 'Jost', sans-serif; font-weight: 200; font-size: 0.4rem; letter-spacing: 0.36em; text-transform: uppercase; display: block; margin-bottom: 0.45rem; }
+.cc-block.why .cc-blbl { color: var(--gold); }
+.cc-block.alt .cc-blbl { color: #7A9BAA; }
+.cc-btxt { font-family: 'Cormorant Garamond', serif; font-size: 0.95rem; color: var(--cream); line-height: 1.6; }
+.cc-again { width: 100%; background: transparent; border: 1px solid rgba(184,151,106,0.22); color: rgba(212,184,150,0.5); font-family: 'Jost', sans-serif; font-weight: 200; font-size: 0.5rem; letter-spacing: 0.28em; text-transform: uppercase; padding: 0.75rem; cursor: pointer; margin-top: 1rem; }
+
+/* ===== BIBLIA ===== */
+#biblia-modal { position: fixed; inset: 0; z-index: 250; overflow-y: auto; background: var(--beige); display: none; }
+#biblia-modal.on { display: block; }
+.bib-bar { position: sticky; top: 0; z-index: 10; background: var(--gold); padding: 0.65rem 1rem; display: flex; align-items: center; justify-content: space-between; }
+.bib-bar-hint { font-family: 'Jost', sans-serif; font-weight: 300; font-size: 0.46rem; letter-spacing: 0.24em; text-transform: uppercase; color: var(--ink); }
+.bib-close { background: none; border: 1px solid rgba(26,22,20,0.3); color: var(--ink); font-family: 'Jost', sans-serif; font-weight: 300; font-size: 0.42rem; letter-spacing: 0.2em; text-transform: uppercase; padding: 0.24rem 0.6rem; cursor: pointer; }
+/* Biblia cover */
+.bib-cover { background: var(--ink); padding: 3rem 1.5rem 2.5rem; text-align: center; }
+.bib-cover-rule { width: 80%; height: 1px; background: linear-gradient(90deg,transparent,var(--gold),transparent); margin: 0 auto 1.8rem; }
+.bib-cover-tag { font-family: 'Jost', sans-serif; font-weight: 100; font-size: 0.5rem; letter-spacing: 0.5em; text-transform: uppercase; color: var(--gold); margin-bottom: 1.2rem; display: block; }
+.bib-cover-logo { font-family: 'Cormorant Garamond', serif; font-weight: 300; font-size: 3.2rem; color: var(--cream); line-height: 0.88; margin-bottom: 0.5rem; }
+.bib-cover-logo em { font-style: italic; color: var(--gold-light); }
+.bib-cover-logo sup { font-size: 0.35em; vertical-align: super; color: var(--gold); font-style: normal; }
+.bib-cover-by { font-family: 'Jost', sans-serif; font-weight: 100; font-size: 0.5rem; letter-spacing: 0.45em; text-transform: uppercase; color: var(--sand); margin-bottom: 1.5rem; display: block; }
+.bib-cover-div { width: 36px; height: 1px; background: var(--gold); margin: 0 auto 0.8rem; }
+.bib-cover-name { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1.6rem; color: var(--gold-light); display: block; margin-bottom: 0.2rem; }
+.bib-cover-closet { font-family: 'Jost', sans-serif; font-weight: 100; font-size: 0.42rem; letter-spacing: 0.3em; text-transform: uppercase; color: rgba(168,152,136,0.45); display: block; margin-bottom: 1.8rem; }
+.bib-cover-rule2 { width: 80%; height: 1px; background: linear-gradient(90deg,transparent,var(--gold),transparent); margin: 0 auto; }
+/* Biblia grid section */
+.bib-sec-hd { background: var(--ink); padding: 0.8rem 1rem; text-align: center; }
+.bib-sec-lbl { font-family: 'Jost', sans-serif; font-weight: 100; font-size: 0.44rem; letter-spacing: 0.42em; text-transform: uppercase; color: var(--gold); display: block; margin-bottom: 0.1rem; }
+.bib-sec-ti { font-family: 'Cormorant Garamond', serif; font-weight: 300; font-style: italic; font-size: 1.15rem; color: var(--cream); }
+.bib-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 2px; background: var(--ink); }
+.bib-cell { position: relative; aspect-ratio: 3/4; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+.bib-cell img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.bib-cell-sil { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+.bib-cell-sil svg { width: 52px; height: 66px; }
+.bib-cell-tag { position: absolute; bottom: 0; left: 0; right: 0; font-family: 'Jost', sans-serif; font-weight: 400; font-size: 0.48rem; letter-spacing: 0.2em; text-transform: uppercase; padding: 0.22rem 0; text-align: center; }
+/* Biblia looks */
+.bib-looks-hd { background: var(--ink-soft); padding: 0.7rem 1rem; text-align: center; }
+.bib-looks-n { font-family: 'Cormorant Garamond', serif; font-weight: 300; font-size: 2.2rem; color: var(--cream); }
+.bib-looks-s { font-family: 'Jost', sans-serif; font-weight: 100; font-size: 0.42rem; letter-spacing: 0.38em; text-transform: uppercase; color: var(--sand); display: block; margin-top: 0.12rem; }
+.bib-look { border-bottom: 1px solid var(--beige-dark); }
+.bib-look:nth-child(even) { background: var(--cream); }
+.bib-look:nth-child(odd) { background: var(--beige); }
+.bib-look-hd { display: flex; justify-content: space-between; align-items: center; padding: 0.45rem 0.8rem; border-bottom: 1px solid rgba(200,191,178,0.5); }
+.bib-look-day { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 0.92rem; }
+.bib-look-num { font-family: 'Jost', sans-serif; font-weight: 200; font-size: 0.4rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--sand); }
+.bib-look-pieces { display: grid; grid-template-columns: repeat(3,1fr); gap: 2px; }
+.bib-lp { position: relative; height: 110px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+.bib-lp img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.bib-lp-sil { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+.bib-lp-sil svg { width: 34px; height: 44px; }
+.bib-lp-tag { position: absolute; bottom: 0; left: 0; right: 0; font-family: 'Jost', sans-serif; font-weight: 400; font-size: 0.34rem; letter-spacing: 0.16em; text-transform: uppercase; padding: 0.12rem 0; text-align: center; }
+/* Biblia footer */
+.bib-footer { background: var(--ink); padding: 2rem 1rem; text-align: center; }
+.bib-footer-r { width: 55%; height: 1px; background: linear-gradient(90deg,transparent,var(--gold),transparent); margin: 0 auto 0.8rem; }
+.bib-footer-ti { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 0.95rem; color: rgba(212,184,150,0.45); display: block; margin-bottom: 0.2rem; }
+.bib-footer-br { font-family: 'Jost', sans-serif; font-weight: 100; font-size: 0.4rem; letter-spacing: 0.38em; text-transform: uppercase; color: rgba(168,152,136,0.25); }
+
+/* BIBLIA button in tab */
+.bib-open-wrap { padding: 1.2rem 1rem 5rem; text-align: center; }
+.bib-open-btn { width: 100%; max-width: 420px; background: var(--ink); border: 1px solid rgba(184,151,106,0.38); color: var(--gold-light); font-family: 'Jost', sans-serif; font-weight: 300; font-size: 0.58rem; letter-spacing: 0.28em; text-transform: uppercase; padding: 1.1rem; cursor: pointer; margin-bottom: 0.5rem; }
+.bib-open-sub { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 0.75rem; color: var(--sand); }
+
+/* LOADING */
+.ld { position: fixed; inset: 0; background: rgba(26,22,20,0.92); z-index: 600; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; }
+.ld.on { display: flex; }
+.sp { width: 22px; height: 22px; border: 1px solid rgba(184,151,106,0.12); border-top-color: var(--gold); border-radius: 50%; animation: spin 0.75s linear infinite; }
+@keyframes spin { to{transform:rotate(360deg)} }
+.ld-t { font-family: 'Jost', sans-serif; font-weight: 200; font-size: 0.5rem; letter-spacing: 0.42em; text-transform: uppercase; color: var(--sand); }
+
+input[type="file"] { display: none; }
+</style>
+</head>
+<body>
+
+<!-- WELCOME -->
+<div id="ws">
+  <div class="w-grain"></div>
+  <div class="w-rule t"></div>
+  <div class="w-tag">The Editor ® — por Código Elegante ™</div>
+  <div class="w-logo">The<br><em>Editor</em><sup>®</sup></div>
+  <div class="w-by">por Código Elegante ™</div>
+  <div class="w-site">@codigoelegante.cl</div>
+  <div class="w-prompt">Nombre</div>
+  <input class="w-input" id="ni" type="text" placeholder="escribe aquí" autocomplete="off" autocorrect="off" autocapitalize="words">
+  <button class="w-btn" onclick="enterApp()">Abrir Edit →</button>
+  <div class="w-rule b"></div>
+  <div class="w-foot">The Editor ® — Código Elegante ™ — Todos los derechos reservados</div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="hdr">
+    <div>
+      <span class="hdr-tag">Código Elegante ™</span>
+      <div class="hdr-logo">The <em>Editor</em><sup>®</sup></div>
+    </div>
+    <div class="hdr-right">
+      <span class="hdr-name" id="hdr-name"></span>
+      <button class="hdr-change" onclick="changeUser()">↺ cambiar</button>
+    </div>
+  </div>
+
+  <div class="cnt">
+
+    <!-- TU EDIT -->
+    <div id="t-edit" class="sc on">
+      <div class="edit-closet-bar">
+        <span class="ecb-name" id="ecb-name">Mi Clóset</span>
+        <button class="ecb-btn" onclick="openClosetModal()">Ver clósets</button>
+      </div>
+      <div class="eg" id="edit-grid"></div>
+      <div class="sel-hint" id="sel-hint"></div>
+      <div class="line-picker-wrap">
+        <div id="line-picker" style="display:flex;gap:3px;padding:0 0 0;max-width:100%;flex-wrap:wrap;"></div>
+      </div>
+      <div class="cc-wrap">
+        <button class="cc-btn" onclick="openCC()">✦ &nbsp;Verificar combinaciones de color</button>
+        <div class="cc-btn-sub">Toca 2 o 3 prendas — elige su color — analiza</div>
+      </div>
+      <div class="pb">The Editor ® — @codigoelegante.cl</div>
+    </div>
+
+    <!-- TENIDAS -->
+    <div id="t-tenidas" class="sc">
+      <div class="ten-sc">
+        <div class="ten-hd">
+          <span class="ten-n">27</span>
+          <span class="ten-s">tenidas — 9 prendas</span>
+        </div>
+        <div id="ten-list"></div>
+        <div class="pb">The Editor ® — @codigoelegante.cl</div>
+      </div>
+    </div>
+
+    <!-- SEMANA -->
+    <div id="t-semana" class="sc">
+      <div class="sem-sc">
+        <div class="sem-hd">
+          <div class="sem-title">Mi Semana</div>
+          <div class="sem-sub">toca un día para cambiar el look</div>
+        </div>
+        <div class="sem-days" id="sem-days"></div>
+        <div class="pb">The Editor ® — @codigoelegante.cl</div>
+      </div>
+    </div>
+
+    <!-- ASESORA -->
+    <div id="t-asesora" class="sc">
+      <div class="ases-sc">
+        <div class="sec-eye">Código Elegante ™</div>
+        <div class="sec-title">¿Qué me pongo?</div>
+        <div class="ases-intro">Cuéntame la ocasión y armo un look<br>con las prendas que ya tienes.</div>
+        <div class="ases-chips">
+          <button class="ases-chip" onclick="setAsesQuery('Reunión de trabajo')">Reunión de trabajo</button>
+          <button class="ases-chip" onclick="setAsesQuery('Cena elegante')">Cena elegante</button>
+          <button class="ases-chip" onclick="setAsesQuery('Fin de semana casual')">Fin de semana casual</button>
+          <button class="ases-chip" onclick="setAsesQuery('Primera cita')">Primera cita</button>
+          <button class="ases-chip" onclick="setAsesQuery('Viaje de negocios')">Viaje de negocios</button>
+          <button class="ases-chip" onclick="setAsesQuery('Evento social')">Evento social</button>
+        </div>
+        <div class="ases-input-wrap">
+          <textarea class="ases-input" id="ases-input" placeholder="Ej: cena romántica el viernes, reunión importante mañana..." rows="2"></textarea>
+          <button class="ases-send" onclick="runAsesora()">→</button>
+        </div>
+        <div id="ases-result"></div>
+        <div class="pb">The Editor ® — @codigoelegante.cl</div>
+      </div>
+    </div>
+
+    <!-- LA BIBLIA -->
+    <div id="t-biblia" class="sc">
+      <div class="bib-open-wrap">
+        <div class="sec-eye">Documento editorial</div>
+        <div class="sec-title">La Biblia de Estilo</div>
+        <div class="rule-gold"></div>
+        <button class="bib-open-btn" onclick="openBiblia()">✦ &nbsp;Abrir La Biblia</button>
+        <div class="bib-open-sub">Tus 27 tenidas · formato editorial</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <nav class="bnav">
+    <button class="bn on" onclick="showTab('edit',this)">
+      <span class="bn-icon">✦</span>
+      <span class="bn-label">Tu Edit</span>
+    </button>
+    <button class="bn" onclick="showTab('tenidas',this)">
+      <span class="bn-icon">◈</span>
+      <span class="bn-label">Tenidas</span>
+    </button>
+    <button class="bn" onclick="showTab('semana',this)">
+      <span class="bn-icon">○</span>
+      <span class="bn-label">Semana</span>
+    </button>
+    <button class="bn" onclick="showTab('asesora',this)">
+      <span class="bn-icon">◇</span>
+      <span class="bn-label">Asesora</span>
+    </button>
+    <button class="bn" onclick="showTab('biblia',this)">
+      <span class="bn-icon">□</span>
+      <span class="bn-label">La Biblia</span>
+    </button>
+  </nav>
+</div>
+
+<!-- CLOSET MODAL -->
+<div class="modal" id="closet-modal">
+  <div class="modal-hd">
+    <div class="modal-title">Mi Clóset</div>
+    <button class="modal-x" onclick="closeClosetModal()">✕</button>
+  </div>
+  <div class="modal-bd">
+    <div class="cl-list" id="cl-list"></div>
+    <button class="cl-new-btn" onclick="promptNewCloset()">+ Nuevo clóset</button>
+    <div style="margin-top:1.2rem">
+      <div class="cg-title">Prendas del clóset activo</div>
+      <div class="cg" id="cg-grid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- LOOK MODAL -->
+<div class="lm" id="lm">
+  <div class="lm-hd">
+    <div class="lm-info">
+      <span class="lm-eyebrow" id="lm-eyebrow"></span>
+      <div class="lm-name" id="lm-name"></div>
+    </div>
+    <button class="lm-x" onclick="closeLM()">✕</button>
+  </div>
+  <div class="lm-bd" id="lm-bd"></div>
+</div>
+
+<!-- LOOK PICKER (Semana) -->
+<div class="lk-picker" id="lk-picker">
+  <div class="lk-picker-hd">
+    <div class="lk-picker-title" id="lk-picker-title">Elige un look</div>
+    <button class="lk-picker-x" onclick="closeLKPicker()">✕</button>
+  </div>
+  <div class="lk-picker-bd" id="lk-picker-bd"></div>
+</div>
+
+<!-- COLOR CHECK MODAL -->
+<div class="cc-modal" id="cc-modal">
+  <div class="cc-modal-hd">
+    <div class="cc-modal-title" id="cc-modal-title">Verificar colores</div>
+    <button class="cc-modal-x" onclick="closeCC()">✕</button>
+  </div>
+  <div class="cc-modal-bd" id="cc-modal-bd"></div>
+</div>
+
+<!-- PALETTE -->
+<div class="pal-modal" id="pal-modal">
+  <div class="pal-bx">
+    <div class="pal-title" id="pal-title">¿De qué color es?</div>
+    <div class="pal-sub">Elige el color principal</div>
+    <div class="pal-grid" id="pal-grid"></div>
+    <button class="pal-cancel" onclick="closePal()">Cancelar</button>
+  </div>
+</div>
+
+<!-- BIBLIA MODAL -->
+<div id="biblia-modal">
+  <div class="bib-bar">
+    <span class="bib-bar-hint">📸 Screenshot → Página completa</span>
+    <button class="bib-close" onclick="closeBiblia()">✕ Cerrar</button>
+  </div>
+  <div id="bib-content"></div>
+</div>
+
+<!-- SHEET (new closet) -->
+<div class="sheet-ov" id="sheet">
+  <div class="sheet-bx">
+    <div class="sheet-bar"></div>
+    <div class="sheet-title">Nuevo Clóset</div>
+    <input class="sheet-in" id="sheet-in" type="text" placeholder="Ej: Invierno 2025" autocorrect="off" autocapitalize="words">
+    <button class="sheet-btn" onclick="createNewCloset()">Crear clóset →</button>
+    <button class="sheet-cancel" onclick="closeSheet()">Cancelar</button>
+  </div>
+</div>
+
+<!-- LOADER -->
+<div class="ld" id="loader">
+  <div class="sp"></div>
+  <div class="ld-t" id="ld-txt">Procesando...</div>
+</div>
+
+<input type="file" id="fi" accept="image/*">
+
+<script>
+// ===== SILHOUETTES =====
+const SV={
+  tshirt:      c=>'<svg viewBox="0 0 50 60" fill="none"><path d="M16 5C16 5 19 2 25 2C31 2 34 5 34 5L44 14L38 20L36 16L36 52L14 52L14 16L12 20L6 14Z" fill="'+c+'"/></svg>',
+  tshirt_long: c=>'<svg viewBox="0 0 50 60" fill="none"><path d="M16 5C16 5 19 2 25 2C31 2 34 5 34 5L45 17L39 23L36 18L36 52L14 52L14 18L11 23L5 17Z" fill="'+c+'"/></svg>',
+  halter:      c=>'<svg viewBox="0 0 50 60" fill="none"><path d="M25 3L35 14L37 46L13 46L15 14Z" fill="'+c+'"/><line x1="25" y1="3" x2="17" y2="10" stroke="'+c+'" stroke-width="1.5"/><line x1="25" y1="3" x2="33" y2="10" stroke="'+c+'" stroke-width="1.5"/></svg>',
+  pants:       c=>'<svg viewBox="0 0 50 60" fill="none"><path d="M11 6L39 6L39 9L35 9L31 33L25 27L19 33L15 9L11 9Z" fill="'+c+'"/><path d="M11 9L7 57L21 57L25 27L29 57L43 57L39 9" fill="'+c+'"/></svg>',
+  skirt:       c=>'<svg viewBox="0 0 50 60" fill="none"><rect x="14" y="4" width="22" height="7" rx="1" fill="'+c+'"/><path d="M14 11L7 56L43 56L36 11Z" fill="'+c+'"/></svg>',
+  coat:        c=>'<svg viewBox="0 0 50 60" fill="none"><path d="M17 3L9 12L5 10L3 18L10 20L10 57L40 57L40 20L47 18L45 10L41 12L33 3C31 7 28 9 25 9C22 9 19 7 17 3Z" fill="'+c+'"/></svg>',
+  biker:       c=>'<svg viewBox="0 0 50 60" fill="none"><path d="M17 3L8 13L4 11L3 19L10 21L10 52L40 52L40 21L47 19L46 11L42 13L33 3L29 9L25 7L21 9Z" fill="'+c+'"/></svg>',
+  denim_jacket:c=>'<svg viewBox="0 0 50 60" fill="none"><path d="M17 3L9 13L5 11L3 19L10 21L10 46L40 46L40 21L47 19L45 11L41 13L33 3L29 8L25 6L21 8Z" fill="'+c+'"/></svg>',
+};
+const BG={top:'#1A1614',bottom:'#F7F4EF',layer:'#E0D9CF'};
+const CO={top:'#FDFBF8',bottom:'#8B6F4E',layer:'#1A1614'};
+const TB={top:'rgba(26,22,20,0.88)',bottom:'rgba(237,232,225,0.92)',layer:'rgba(200,191,178,0.92)'};
+const TC={top:'#F7F4EF',bottom:'#1A1614',layer:'#1A1614'};
+const LTC={h:'#8B6F5E',v:'#4A6B7A',d:'#5E6B4A',mix:'#7A6B5E'};
+const LTL={h:'Horizontal',v:'Vertical',d:'Diagonal',mix:'Combinación'};
+const SECS=[{k:'h',l:'Horizontales'},{k:'v',l:'Verticales'},{k:'d',l:'Diagonales'},{k:'mix',l:'Combinaciones'}];
+const DAYS_SHORT=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+const DAYS_FULL=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+
+function svgOf(g){ return SV[g.sil](CO[g.role]); }
+function bgOf(g){ return BG[g.role]; }
+
+const DEF=[
+  {role:'top',sil:'tshirt',name:'Top',img:null,ai:false},
+  {role:'bottom',sil:'pants',name:'Bottom',img:null,ai:false},
+  {role:'layer',sil:'coat',name:'Layer',img:null,ai:false},
+  {role:'layer',sil:'biker',name:'Layer',img:null,ai:false},
+  {role:'top',sil:'halter',name:'Top',img:null,ai:false},
+  {role:'bottom',sil:'pants',name:'Bottom',img:null,ai:false},
+  {role:'bottom',sil:'skirt',name:'Bottom',img:null,ai:false},
+  {role:'layer',sil:'denim_jacket',name:'Layer',img:null,ai:false},
+  {role:'top',sil:'tshirt_long',name:'Top',img:null,ai:false},
+];
+
+const LOOKS=[
+  {cells:[0,1,2],label:'Fila 1',type:'h'},{cells:[3,4,5],label:'Fila 2',type:'h'},{cells:[6,7,8],label:'Fila 3',type:'h'},
+  {cells:[0,3,6],label:'Col 1',type:'v'},{cells:[1,4,7],label:'Col 2',type:'v'},{cells:[2,5,8],label:'Col 3',type:'v'},
+  {cells:[2,4,6],label:'Diagonal',type:'d'},
+  {cells:[0,1,3],label:'Mix',type:'mix'},{cells:[0,1,7],label:'Mix',type:'mix'},{cells:[0,2,5],label:'Mix',type:'mix'},
+  {cells:[0,3,5],label:'Mix',type:'mix'},{cells:[0,5,7],label:'Mix',type:'mix'},{cells:[0,2,6],label:'Mix',type:'mix'},
+  {cells:[0,3,6],label:'Mix',type:'mix'},{cells:[0,6,7],label:'Mix',type:'mix'},{cells:[1,2,4],label:'Mix',type:'mix'},
+  {cells:[1,3,4],label:'Mix',type:'mix'},{cells:[1,4,7],label:'Mix',type:'mix'},{cells:[2,4,5],label:'Mix',type:'mix'},
+  {cells:[3,4,5],label:'Mix',type:'mix'},{cells:[4,5,7],label:'Mix',type:'mix'},{cells:[2,4,6],label:'Mix',type:'mix'},
+  {cells:[3,4,6],label:'Mix',type:'mix'},{cells:[4,6,7],label:'Mix',type:'mix'},{cells:[1,2,8],label:'Mix',type:'mix'},
+  {cells:[1,3,8],label:'Mix',type:'mix'},{cells:[1,7,8],label:'Mix',type:'mix'},
+];
+
+// ===== STATE =====
+let uname='', closets={}, acid=null, eslot=null;
+let selCells=[], semana=[0,1,2,3,4,5,6], semPicking=null;
+let ccSel=[], ccColors={}, palSlot=null;
+
+function garments(){ return closets[acid]?.garments||DEF.map(d=>({...d})); }
+
+// ===== PERSIST =====
+function save(){
+  try{
+    localStorage.setItem('te_v16',JSON.stringify({closets,acid,semana}));
+  }catch(e){}
+}
+
+function load(){
+  try{
+    const s=localStorage.getItem('te_v16');
+    if(s){
+      const d=JSON.parse(s);
+      closets=d.closets||{};
+      acid=d.acid||null;
+      semana=d.semana||[0,1,2,3,4,5,6];
+    }
+  }catch(e){}
+  if(!acid||!closets[acid]){
+    const id='c_'+Date.now();
+    closets[id]={name:'Mi Clóset',garments:DEF.map(d=>({...d}))};
+    acid=id;
+    save();
+  }
+}
+
+// ===== WELCOME =====
+function enterApp(){
+  const v=document.getElementById('ni').value.trim();
+  if(!v){document.getElementById('ni').focus();return;}
+  uname=v;
+  document.getElementById('hdr-name').textContent=v;
+  document.getElementById('ws').classList.add('hidden');
+  document.getElementById('app').classList.add('on');
+  renderEditGrid();
+  renderTenidas();
+  renderSemana();
+}
+function changeUser(){
+  document.getElementById('ni').value='';
+  document.getElementById('ws').classList.remove('hidden');
+  document.getElementById('app').classList.remove('on');
+  selCells=[];
+}
+document.getElementById('ni').addEventListener('keydown',e=>{if(e.key==='Enter')enterApp();});
+
+// ===== TABS =====
+function showTab(name,btn){
+  document.querySelectorAll('.sc').forEach(s=>s.classList.remove('on'));
+  document.querySelectorAll('.bn').forEach(b=>b.classList.remove('on'));
+  document.getElementById('t-'+name).classList.add('on');
+  btn.classList.add('on');
+  if(name==='tenidas')renderTenidas();
+  if(name==='semana')renderSemana();
+}
+
+// ===== TU EDIT GRID =====
+function renderEditGrid(){
+  const G=garments();
+  document.getElementById('ecb-name').textContent=closets[acid]?.name||'Mi Clóset';
+  document.getElementById('edit-grid').innerHTML=G.map((g,i)=>{
+    const isSel=selCells.includes(i);
+    const isDim=selCells.length>0&&!isSel;
+    const img=g.img?'<img src="'+g.img+'">'
+      :'<div class="cl-sil" style="background:'+bgOf(g)+'">'+svgOf(g)+'</div>';
+    const lineColor=activeLine?LTC[activeLine.type]:null;
+    const selStyle=isSel&&lineColor?'box-shadow:inset 0 0 0 3.5px '+lineColor+';z-index:2;':'';
+    const tagStyle=isSel&&lineColor?'background:'+lineColor+' !important;color:var(--ink) !important;font-weight:700;':'background:'+TB[g.role]+';color:'+TC[g.role]+';';
+    return '<div class="cl'+(isSel?' sel':'')+(isDim?' dim':'')+'" id="ec'+i+'" onclick="tapCell('+i+')" style="'+selStyle+'">'
+      +img
+      +'<div class="cl-tag" style="'+tagStyle+'">'+g.role+'</div>'
+      +'</div>';
+  }).join('');
+  updateSelHint();
+}
+
+// Lines through each cell
+const CELL_LINES={
+  0:[{cells:[0,1,2],label:'Fila 1',type:'h'},{cells:[0,3,6],label:'Col 1',type:'v'}],
+  1:[{cells:[0,1,2],label:'Fila 1',type:'h'},{cells:[1,4,7],label:'Col 2',type:'v'}],
+  2:[{cells:[0,1,2],label:'Fila 1',type:'h'},{cells:[2,5,8],label:'Col 3',type:'v'},{cells:[2,4,6],label:'Diagonal',type:'d'}],
+  3:[{cells:[3,4,5],label:'Fila 2',type:'h'},{cells:[0,3,6],label:'Col 1',type:'v'}],
+  4:[{cells:[3,4,5],label:'Fila 2',type:'h'},{cells:[1,4,7],label:'Col 2',type:'v'},{cells:[2,4,6],label:'Diagonal',type:'d'}],
+  5:[{cells:[3,4,5],label:'Fila 2',type:'h'},{cells:[2,5,8],label:'Col 3',type:'v'}],
+  6:[{cells:[6,7,8],label:'Fila 3',type:'h'},{cells:[0,3,6],label:'Col 1',type:'v'},{cells:[2,4,6],label:'Diagonal',type:'d'}],
+  7:[{cells:[6,7,8],label:'Fila 3',type:'h'},{cells:[1,4,7],label:'Col 2',type:'v'}],
+  8:[{cells:[6,7,8],label:'Fila 3',type:'h'},{cells:[2,5,8],label:'Col 3',type:'v'}],
+};
+
+let activeLine=null; // {cells, label, type}
+let pickingLine=false;
+let lineOptions=[];
+
+function tapCell(i){
+  // If we have an active line and tap outside it — clear
+  if(activeLine&&!activeLine.cells.includes(i)){
+    activeLine=null;selCells=[];
+    renderEditGrid();
+    return;
+  }
+  // Show line options for this cell
+  lineOptions=CELL_LINES[i]||[];
+  if(lineOptions.length===1){
+    // Only one line — select it directly
+    selectLine(lineOptions[0]);
+  } else {
+    // Multiple lines — show picker below grid
+    showLinePicker(i,lineOptions);
+  }
+}
+
+function selectLine(line){
+  activeLine=line;
+  selCells=line.cells;
+  document.getElementById('line-picker').innerHTML='';
+  renderEditGrid();
+}
+
+function showLinePicker(cellIdx, options){
+  const picker=document.getElementById('line-picker');
+  picker.innerHTML=options.map((l,i)=>'<button class="lp-btn" style="border-top-color:'+LTC[l.type]+'" onclick="selectLine('+JSON.stringify(l).replace(/"/g,"'")+')"><span>'+l.label+'</span><small>'+l.type+'</small></button>').join('');
+}
+
+function clearSel(){
+  activeLine=null;selCells=[];
+  document.getElementById('line-picker').innerHTML='';
+  renderEditGrid();
+}
+
+function updateSelHint(){
+  const el=document.getElementById('sel-hint');
+  if(!activeLine||selCells.length===0){el.textContent='';return;}
+  el.textContent=activeLine.label+' — '+selCells.map(i=>garments()[i].role).join(' · ');
+}
+
+// ===== CLOSET MODAL =====
+function openClosetModal(){
+  renderClosetList();
+  renderCGGrid();
+  document.getElementById('closet-modal').classList.add('on');
+}
+function closeClosetModal(){document.getElementById('closet-modal').classList.remove('on');}
+
+function renderClosetList(){
+  document.getElementById('cl-list').innerHTML=Object.entries(closets).map(([id,c])=>{
+    const active=id===acid?'active':'';
+    const delBtn=Object.keys(closets).length>1
+      ?'<button class="cl-item-del" onclick="delCloset(event,\''+id+'\')">✕</button>':' ';
+    return '<div class="cl-item '+active+'" onclick="switchCloset(\''+id+'\')"><span class="cl-item-name">'+c.name+'</span><span class="cl-item-count">'+c.garments.filter(g=>g.img).length+'/9</span>'+delBtn+'</div>';
+  }).join('');
+}
+
+function renderCGGrid(){
+  const G=garments();
+  document.getElementById('cg-grid').innerHTML=G.map((g,i)=>{
+    const imgH=g.img?'<img class="cg-img" src="'+g.img+'">'
+      :'<div class="cg-sil" style="background:'+bgOf(g)+'">'+svgOf(g)+'</div>';
+    const aiH=g.ai?'<div class="cg-ai">IA</div>':'';
+    const delH=g.img?'<button class="cg-del" onclick="delGarment(event,'+i+')">✕</button>':'';
+    return '<div class="cg-slot" onclick="uploadGarment('+i+')">'
+      +'<div class="cg-img-wrap" style="background:'+bgOf(g)+'">'+imgH+'</div>'
+      +'<div class="cg-info"><span class="cg-role">'+g.role+'</span>'
+      +'<span class="cg-action">'+(g.img?'cambiar':'agregar foto')+'</span></div>'
+      +aiH+delH+'</div>';
+  }).join('');
+}
+
+function switchCloset(id){
+  acid=id;
+  save();
+  renderEditGrid();
+  renderTenidas();
+  renderSemana();
+  renderClosetList();
+  renderCGGrid();
+}
+
+function delCloset(e,id){
+  e.stopPropagation();
+  if(Object.keys(closets).length<=1)return;
+  if(!confirm('¿Eliminar este clóset?'))return;
+  delete closets[id];
+  if(acid===id)acid=Object.keys(closets)[0];
+  save();
+  renderClosetList();
+  renderCGGrid();
+  renderEditGrid();
+}
+
+function promptNewCloset(){
+  document.getElementById('sheet-in').value='';
+  document.getElementById('sheet').classList.add('on');
+  setTimeout(()=>document.getElementById('sheet-in').focus(),350);
+}
+function closeSheet(){document.getElementById('sheet').classList.remove('on');}
+function createNewCloset(){
+  const n=document.getElementById('sheet-in').value.trim();
+  if(!n)return;
+  const id='c_'+Date.now();
+  closets[id]={name:n,garments:DEF.map(d=>({...d}))};
+  acid=id;
+  closeSheet();
+  save();
+  renderClosetList();
+  renderCGGrid();
+  renderEditGrid();
+  renderTenidas();
+  renderSemana();
+}
+document.getElementById('sheet-in').addEventListener('keydown',e=>{if(e.key==='Enter')createNewCloset();});
+document.getElementById('sheet').addEventListener('click',e=>{if(e.target===document.getElementById('sheet'))closeSheet();});
+
+// ===== UPLOAD =====
+function uploadGarment(i){eslot=i;document.getElementById('fi').click();}
+document.getElementById('fi').addEventListener('change',function(e){
+  const file=e.target.files[0];if(!file||eslot===null)return;
+  const reader=new FileReader();
+  reader.onload=async ev=>{
+    const img=ev.target.result;
+    showLoad('Analizando prenda...');
+    const G=closets[acid].garments;
+    G[eslot].img=img;G[eslot].ai=false;G[eslot].name=G[eslot].role;
+    try{
+      const d=await describeGarment(img,G[eslot].role);
+      if(d&&d.full&&d.full!==G[eslot].role){
+        G[eslot].name=d.full;G[eslot].ai=true;
+        const dl=d.full.toLowerCase();
+        if(dl.includes('falda'))G[eslot].sil='skirt';
+        else if(dl.includes('abrigo'))G[eslot].sil='coat';
+        else if(dl.includes('biker'))G[eslot].sil='biker';
+        else if(dl.includes('chaqueta')&&G[eslot].role==='layer')G[eslot].sil='denim_jacket';
+        else if((dl.includes('manga larga')||dl.includes('blusa'))&&G[eslot].role==='top')G[eslot].sil='tshirt_long';
+        else if(dl.includes('halter')||dl.includes('tirantes'))G[eslot].sil='halter';
+      }
+    }catch(e){}
+    save();
+    renderCGGrid();
+    renderEditGrid();
+    renderTenidas();
+    hideLoad();
+  };
+  reader.readAsDataURL(file);this.value='';
+});
+
+function delGarment(e,i){
+  e.stopPropagation();
+  const G=closets[acid].garments;
+  G[i]={...DEF[i],img:null,ai:false,name:DEF[i].role};
+  save();renderCGGrid();renderEditGrid();renderTenidas();
+}
+
+async function describeGarment(img,role){
+  try{
+    const b=img.split(',')[1];
+    const mt=img.startsWith('data:image/png')?'image/png':'image/jpeg';
+    const r=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({
+        model:'claude-haiku-4-5-20251001',
+        max_tokens:100,
+        messages:[{role:'user',content:[
+          {type:'image',source:{type:'base64',media_type:mt,data:b}},
+          {type:'text',text:'Describe esta prenda ('+role+') en español. Solo el tipo y color, 3-4 palabras. Responde SOLO JSON sin markdown: {"full":"tipo color"}'}
+        ]}]
+      })
+    });
+    if(!r.ok)return{full:role};
+    const d=await r.json();
+    const txt=(d.content&&d.content[0]&&d.content[0].text)||'';
+    const m=txt.replace(/```json|```/g,'').trim();
+    const s=m.indexOf('{'),e=m.lastIndexOf('}');
+    if(s===-1)return{full:role};
+    return JSON.parse(m.slice(s,e+1));
+  }catch(e){return{full:role};}
+}
+
+// ===== TENIDAS =====
+function renderTenidas(){
+  const G=garments();let n=1,h='';
+  SECS.forEach(sec=>{
+    const sl=LOOKS.filter(l=>l.type===sec.k);if(!sl.length)return;
+    h+='<div class="ten-sec-hd"><div class="ten-line"></div><div class="ten-dot" style="background:'+LTC[sec.k]+'"></div><div class="ten-lbl">'+sec.l+'</div><div class="ten-dot" style="background:'+LTC[sec.k]+'"></div><div class="ten-line"></div></div>';
+    sl.forEach(look=>{
+      const pp=look.cells.map(i=>G[i]);const num=n;
+      const thumbs=pp.map((p,pi)=>{
+        const plus=pi>0?'<span class="lk-plus">+</span>':'';
+        const t=p.img?'<img class="lk-thumb-img" src="'+p.img+'">'
+          :'<div class="lk-thumb-sil" style="background:'+bgOf(p)+'">'+svgOf(p)+'</div>';
+        return plus+t;
+      }).join('');
+      const roles=pp.map(p=>'<span class="lk-role">'+p.role+'</span>').join('');
+      h+='<div class="lk-row" style="border-left-color:'+LTC[sec.k]+'" onclick="openLM('+(num-1)+')">'
+        +'<span class="lk-num">'+num+'</span>'
+        +'<div class="lk-thumbs">'+thumbs+'</div>'
+        +'<div class="lk-roles">'+roles+'</div>'
+        +'<span class="lk-arr">›</span></div>';
+      n++;
+    });
+  });
+  document.getElementById('ten-list').innerHTML=h;
+}
+
+function openLM(idx){
+  const G=garments();const look=LOOKS[idx];const pp=look.cells.map(i=>G[i]);const c=LTC[look.type];
+  document.getElementById('lm-eyebrow').textContent='Look '+(idx+1)+' — '+LTL[look.type];
+  document.getElementById('lm-name').textContent=pp.map(p=>p.role.toUpperCase()).join(' + ');
+  const pieces=pp.map(p=>{
+    const vis=p.img?'<img src="'+p.img+'">':(svgOf(p));
+    const bg=p.img?'transparent':bgOf(p);
+    return '<div class="lm-piece '+p.role+'"><div class="lm-pv" style="background:'+bg+'">'+vis+'</div>'
+      +'<div class="lm-pi"><span class="lm-pr" style="color:'+c+'">'+p.role+'</span>'
+      +'<div class="lm-pn">'+(p.name||p.role)+'</div></div></div>';
+  }).join('');
+  document.getElementById('lm-bd').innerHTML='<div class="lm-num-big">'+(idx+1)+'</div>'
+    +'<div class="lm-pieces">'+pieces+'</div>'
+    +'<div class="lm-ft"><span>The Editor ® — @codigoelegante.cl — '+uname+'</span></div>';
+  document.getElementById('lm').classList.add('on');
+}
+function closeLM(){document.getElementById('lm').classList.remove('on');}
+
+// ===== SEMANA =====
+function renderSemana(){
+  const G=garments();
+  document.getElementById('sem-days').innerHTML=DAYS_FULL.map((day,di)=>{
+    const lookIdx=semana[di];
+    const look=LOOKS[lookIdx];
+    const pp=look.cells.map(i=>G[i]);
+    const thumbs=pp.map(p=>{
+      return p.img?'<img class="sem-day-thumb" src="'+p.img+'">'
+        :'<div class="sem-day-sil" style="background:'+bgOf(p)+'">'+svgOf(p)+'</div>';
+    }).join('');
+    return '<div class="sem-day" onclick="openSemPicker('+di+')">'
+      +'<div class="sem-day-lbl"><span class="sem-day-name">'+day+'</span><span class="sem-day-num">tenida '+(lookIdx+1)+'</span></div>'
+      +'<div class="sem-day-look"><div class="sem-day-thumbs">'+thumbs+'</div>'
+      +'<div class="sem-day-info"><span class="sem-day-roles">'+pp.map(p=>p.role).join(' · ')+'</span></div>'
+      +'<span class="sem-day-arr">›</span></div>'
+      +'</div>';
+  }).join('');
+}
+
+function openSemPicker(di){
+  semPicking=di;
+  document.getElementById('lk-picker-title').textContent='Look para el '+DAYS_FULL[di];
+  const G=garments();
+  let h='';
+  LOOKS.forEach((look,idx)=>{
+    const pp=look.cells.map(i=>G[i]);
+    const thumbs=pp.map((p,pi)=>{
+      const plus=pi>0?'<span class="lk-plus">+</span>':'';
+      const t=p.img?'<img class="lk-thumb-img" src="'+p.img+'">'
+        :'<div class="lk-thumb-sil" style="background:'+bgOf(p)+'">'+svgOf(p)+'</div>';
+      return plus+t;
+    }).join('');
+    const active=semana[di]===idx?'background:'+LTC[look.type]+';':'';
+    h+='<div class="lk-row" style="border-left-color:'+LTC[look.type]+';'+active+'" onclick="pickSemLook('+idx+')">'
+      +'<span class="lk-num">'+( idx+1)+'</span>'
+      +'<div class="lk-thumbs">'+thumbs+'</div>'
+      +'<div class="lk-roles">'+pp.map(p=>'<span class="lk-role">'+p.role+'</span>').join('')+'</div>'
+      +'</div>';
+  });
+  document.getElementById('lk-picker-bd').innerHTML=h;
+  document.getElementById('lk-picker').classList.add('on');
+}
+
+function pickSemLook(idx){
+  semana[semPicking]=idx;
+  save();
+  closeLKPicker();
+  renderSemana();
+}
+function closeLKPicker(){document.getElementById('lk-picker').classList.remove('on');}
+
+// ===== ASESORA =====
+function setAsesQuery(q){document.getElementById('ases-input').value=q;}
+
+// Asesora - internal logic, no API
+const OCASION_RULES={
+  'reunion':    {prefer:['layer','top','bottom'],avoid:[],desc:'Apuesta por una base sólida y una capa elegante que dé autoridad sin esfuerzo.'},
+  'trabajo':    {prefer:['layer','top','bottom'],avoid:[],desc:'Un look estructurado pero cómodo. La capa hace todo el trabajo.'},
+  'cena':       {prefer:['top','bottom','layer'],avoid:[],desc:'Elige el top más especial que tengas. La noche pide un poco más.'},
+  'elegante':   {prefer:['top','bottom','layer'],avoid:[],desc:'Menos es más. Que cada prenda sea impecable.'},
+  'casual':     {prefer:['top','bottom'],avoid:[],desc:'Comodidad con criterio. Sin layer si el día acompaña.'},
+  'finde':      {prefer:['top','bottom'],avoid:[],desc:'Tu versión más relajada pero con intención.'},
+  'viaje':      {prefer:['layer','bottom','top'],avoid:[],desc:'Prendas que viajen bien y funcionen solas o combinadas.'},
+  'cita':       {prefer:['top','bottom'],avoid:[],desc:'Que te sientas bien en tu piel. Un detalle especial marca la diferencia.'},
+  'evento':     {prefer:['layer','top','bottom'],avoid:[],desc:'El momento pide presencia. Vístete para ser recordada.'},
+  'default':    {prefer:['top','bottom','layer'],avoid:[],desc:'Un look armado con lo que tienes — y funciona.'},
+};
+
+function detectOcasion(q){
+  const t=q.toLowerCase();
+  if(/reuni|trabaj|oficin|negocio/.test(t))return'trabajo';
+  if(/cena|noche|restauran/.test(t))return'cena';
+  if(/elegant|formal|evento|gala/.test(t))return'elegante';
+  if(/casual|informal|relaja/.test(t))return'casual';
+  if(/finde|fin de semana|weekend/.test(t))return'finde';
+  if(/viaje|aeropuerto|travel/.test(t))return'viaje';
+  if(/cita|date|romanc/.test(t))return'cita';
+  if(/evento|fiesta|cumple/.test(t))return'evento';
+  return'default';
+}
+
+function runAsesora(){
+  const q=document.getElementById('ases-input').value.trim();
+  if(!q)return;
+  const G=garments();
+  showLoad('Armando looks...');
+  document.getElementById('ases-result').innerHTML='';
+  setTimeout(()=>{
+    try{
+      const ocasion=detectOcasion(q);
+      const rule=OCASION_RULES[ocasion]||OCASION_RULES.default;
+      // Group garments by role
+      const tops=G.map((g,i)=>({...g,i})).filter(g=>g.role==='top');
+      const bottoms=G.map((g,i)=>({...g,i})).filter(g=>g.role==='bottom');
+      const layers=G.map((g,i)=>({...g,i})).filter(g=>g.role==='layer');
+      // Build 2 looks using different combinations
+      const looks=[];
+      // Look 1 - first available of each role
+      const l1top=tops[0];const l1bot=bottoms[0];const l1lay=layers[0];
+      if(l1top&&l1bot){
+        const pp=l1lay?[l1top,l1bot,l1lay]:[l1top,l1bot];
+        looks.push({prendas:pp,porque:rule.desc+' Look 1: '+pp.map(p=>p.name||p.role).join(', ')+'.'});
+      }
+      // Look 2 - second combination
+      const l2top=tops[1]||tops[0];const l2bot=bottoms[1]||bottoms[0];const l2lay=layers[1]||layers[0];
+      if(l2top&&l2bot&&(l2top.i!==l1top?.i||l2bot.i!==l1bot?.i)){
+        const pp=l2lay?[l2top,l2bot,l2lay]:[l2top,l2bot];
+        looks.push({prendas:pp,porque:'Otra opción con el mismo criterio: '+pp.map(p=>p.name||p.role).join(', ')+'. Las dos prendas dialogan bien para esta ocasión.'});
+      }
+      hideLoad();
+      if(looks.length===0){
+        document.getElementById('ases-result').innerHTML='<div class="ases-empty"><span class="ases-empty-icon">◈</span><span class="ases-empty-txt">Carga al menos un top y un bottom en Mi Clóset para armar looks.</span></div>';
+        return;
+      }
+      renderAsesResult(looks,q);
+    }catch(e){
+      hideLoad();
+      document.getElementById('ases-result').innerHTML='<div class="ases-empty"><span class="ases-empty-icon">◈</span><span class="ases-empty-txt">Algo salió mal. Intenta de nuevo.</span></div>';
+    }
+  },600);
+}
+
+function renderAsesResult(looks,q){
+  document.getElementById('ases-result').innerHTML=looks.map((l,i)=>{
+    const pp=l.prendas||[];
+    const thumbs=pp.map(p=>{
+      return p.img?'<img class="alc-thumb" src="'+p.img+'">'
+        :'<div class="alc-sil" style="background:'+bgOf(p)+'">'+svgOf(p)+'</div>';
+    }).join('');
+    return '<div class="ases-look-card">'
+      +'<div class="alc-hd"><span class="alc-num">Look '+(i+1)+'</span><span class="alc-label">'+q+'</span></div>'
+      +'<div class="alc-thumbs">'+thumbs+'</div>'
+      +'<div class="alc-why">'+l.porque+'</div>'
+      +'</div>';
+  }).join('');
+}
+
+// ===== COLOR CHECK =====
+const PALETA=[
+  {n:'Negro',f:'neutro-oscuro',h:'#1A1614'},{n:'Blanco',f:'neutro-claro',h:'#F7F4EF'},
+  {n:'Gris',f:'neutro-medio',h:'#888'},{n:'Gris claro',f:'neutro-medio',h:'#C8C8C8'},
+  {n:'Beige',f:'neutro-calido',h:'#E8D9C0'},{n:'Camel',f:'neutro-calido',h:'#C19A6B'},
+  {n:'Crema',f:'neutro-claro',h:'#F2EBD9'},{n:'Nude',f:'neutro-calido',h:'#D4B896'},
+  {n:'Marrón',f:'neutro-tierra',h:'#6B4226'},{n:'Chocolate',f:'neutro-tierra',h:'#3D1C02'},
+  {n:'Terracota',f:'terracota',h:'#C1622F'},{n:'Borgoña',f:'rojo-oscuro',h:'#6B1E2E'},
+  {n:'Rojo',f:'rojo',h:'#C0392B'},{n:'Coral',f:'rojo',h:'#E8735A'},
+  {n:'Naranja',f:'naranja',h:'#E67E22'},{n:'Mostaza',f:'amarillo',h:'#C9A84C'},
+  {n:'Amarillo',f:'amarillo',h:'#F1C40F'},{n:'Verde oliva',f:'verde-oliva',h:'#6B7A3A'},
+  {n:'Verde',f:'verde',h:'#27AE60'},{n:'Sage',f:'verde-oliva',h:'#9CAF88'},
+  {n:'Azul marino',f:'azul-marino',h:'#1B2A4A'},{n:'Azul',f:'azul',h:'#2980B9'},
+  {n:'Celeste',f:'azul-claro',h:'#87CEEB'},{n:'Lavanda',f:'morado',h:'#C3A8D1'},
+  {n:'Morado',f:'morado',h:'#8E44AD'},{n:'Rosa',f:'rosa',h:'#F1A7B5'},
+  {n:'Fucsia',f:'fucsia',h:'#E91E8C'},{n:'Dorado',f:'amarillo',h:'#D4AF37'},
+  {n:'Plateado',f:'neutro-medio',h:'#A8A9AD'},{n:'Denim',f:'azul',h:'#4A6FA5'},
+];
+
+const COMPAT={
+  'neutro-oscuro':{b:['neutro-claro','neutro-calido','neutro-tierra','neutro-medio','rojo-oscuro','azul-marino','verde-oliva','terracota','azul','verde','rojo','rosa','morado','fucsia','amarillo','naranja','azul-claro'],m:[],x:[]},
+  'neutro-claro':{b:['neutro-oscuro','neutro-calido','neutro-tierra','neutro-medio','azul-marino','azul','verde','rosa','morado','rojo-oscuro'],m:['rojo','naranja','fucsia','amarillo'],x:[]},
+  'neutro-calido':{b:['neutro-oscuro','neutro-claro','neutro-tierra','rojo-oscuro','terracota','amarillo','verde-oliva','azul-marino'],m:['azul','verde','rosa'],x:['fucsia','morado']},
+  'neutro-tierra':{b:['neutro-oscuro','neutro-claro','neutro-calido','neutro-medio','terracota','verde-oliva','amarillo','rojo-oscuro'],m:['azul','verde','rosa'],x:['fucsia','azul-claro']},
+  'neutro-medio':{b:['neutro-oscuro','neutro-claro','azul-marino','azul','rojo','rojo-oscuro','verde','morado'],m:['amarillo','naranja'],x:[]},
+  'rojo-oscuro':{b:['neutro-oscuro','neutro-claro','neutro-calido','neutro-tierra','neutro-medio','azul-marino','verde-oliva'],m:['rosa','morado'],x:['naranja','rojo','terracota','fucsia']},
+  'rojo':{b:['neutro-oscuro','neutro-claro','neutro-medio','azul-marino'],m:['terracota','rosa'],x:['naranja','rojo-oscuro','fucsia','verde']},
+  'terracota':{b:['neutro-oscuro','neutro-claro','neutro-calido','neutro-tierra','verde-oliva','amarillo','azul-marino'],m:['rojo','naranja'],x:['fucsia','azul-claro']},
+  'naranja':{b:['neutro-oscuro','neutro-claro','azul-marino','azul'],m:['amarillo','terracota'],x:['rojo','fucsia','morado','rosa']},
+  'amarillo':{b:['neutro-oscuro','neutro-calido','azul-marino','azul','verde-oliva'],m:['naranja','verde'],x:['rojo','fucsia','morado','rosa']},
+  'verde-oliva':{b:['neutro-oscuro','neutro-claro','neutro-calido','neutro-tierra','terracota','amarillo','rojo-oscuro'],m:['verde','azul'],x:['fucsia','rosa','morado']},
+  'verde':{b:['neutro-oscuro','neutro-claro','neutro-medio','azul-marino','azul'],m:['verde-oliva','amarillo'],x:['rojo','fucsia','naranja']},
+  'azul-marino':{b:['neutro-oscuro','neutro-claro','neutro-calido','neutro-tierra','neutro-medio','rojo','rojo-oscuro','verde-oliva','terracota','amarillo','naranja','rosa'],m:['azul','morado'],x:['fucsia']},
+  'azul-claro':{b:['neutro-oscuro','neutro-claro','neutro-medio','azul-marino'],m:['azul','verde','rosa'],x:['naranja','amarillo','rojo','terracota']},
+  'azul':{b:['neutro-oscuro','neutro-claro','neutro-medio','azul-marino','naranja','amarillo'],m:['verde','morado','azul-claro'],x:['rojo','fucsia']},
+  'morado':{b:['neutro-oscuro','neutro-claro','neutro-medio','rosa','azul'],m:['azul-marino','rojo-oscuro'],x:['naranja','amarillo','verde-oliva','terracota']},
+  'rosa':{b:['neutro-oscuro','neutro-claro','neutro-medio','azul-marino','morado'],m:['rojo','fucsia'],x:['naranja','amarillo','verde','terracota']},
+  'fucsia':{b:['neutro-oscuro','neutro-claro','neutro-medio'],m:['rosa','morado'],x:['rojo','naranja','amarillo','verde','terracota','neutro-calido','neutro-tierra']},
+  'indefinido':{b:[],m:[],x:[]},
+};
+
+const MSGS={
+  'SÍ':[
+    {t:'Combinación con criterio',p:'Estos colores se llevan bien porque comparten una lógica visual — pueden ser de la misma familia tonal o complementarse sin competir. El resultado es un look que se lee claro de inmediato.',a:'Potencia el look sumando textura — un tejido, una prenda de cuero o un accesorio mate o brillante en alguno de los mismos colores. La variación de textura da profundidad sin romper la armonía.'},
+    {t:'Funcionan juntos',p:'Hay una relación natural entre estos tonos. Uno ancla el look y el otro lo eleva — esa jerarquía es lo que hace que el conjunto funcione sin esfuerzo.',a:'Si quieres darle un giro más editorial, agrega un accesorio en el color más oscuro de la combinación. Eso cierra el look con elegancia.'},
+    {t:'Esto tiene sentido',p:'Estos colores dialogan bien. No se anulan ni se roban protagonismo — cada uno ocupa su lugar y el resultado es coherente.',a:'Úsalos tal como están. Si quieres sumar algo, elige el mismo color en una textura distinta o un accesorio en tono neutro para no sobrecargar.'},
+  ],
+  'CON MATICES':[
+    {t:'Funciona, pero pide algo más',p:'Estos colores no se pelean, pero tampoco se llevan solos. Tienen personalidades distintas y necesitan un puente que los ponga de acuerdo.',a:'Un accesorio en negro, camel o beige hace el trabajo. Cinturón, zapato o bolso en neutro ancla el look y la tensión entre los colores pasa a ser contraste intencional.'},
+    {t:'El contraste es intencional',p:'Hay una distancia de temperatura o tono entre estas prendas que genera tensión visual. Eso no es un error — pero hay que manejarlo con confianza. Una de las dos tiene que ser el protagonista.',a:'Decide cuál prenda lidera y que la otra la acompañe. Reduce los accesorios al mínimo. Menos es más cuando los colores ya tienen carácter.'},
+    {t:'Necesitan un ancla',p:'La combinación es posible, pero no obvia. Estos tonos necesitan un tercer elemento que los conecte y le dé al look una lectura clara.',a:'Un neutro como negro, blanco o camel en accesorio o prenda adicional actúa como ancla y hace que la combinación tenga sentido sin que tengas que explicarla.'},
+  ],
+  'NO':[
+    {t:'Estos colores compiten',p:'La tensión entre estos tonos genera ruido visual — hay un choque de temperatura, saturación o familia cromática que hace que el ojo no sepa dónde ir.',a:'Reemplaza una de las dos por un neutro: negro, blanco, beige o gris. Eso resuelve el conflicto de inmediato y el look respira.'},
+    {t:'No se llevan bien',p:'Hay un desacuerdo visual entre estos colores que hace que el conjunto se vea forzado. No es una cuestión de gusto — es que sus temperaturas o intensidades se contradicen.',a:'Separa estas prendas. Cada una funciona mejor con colores de su propia familia o con neutros.'},
+    {t:'Falta un intermediario',p:'Entre estos tonos hay demasiada distancia — de temperatura, familia o intensidad. Sin algo que los conecte, compiten en lugar de dialogar.',a:'Introduce un neutro que haga de puente: un blazer en beige, zapatos negros o un bolso en camel. Con ese elemento de anclaje, la combinación puede funcionar.'},
+  ],
+};
+
+function openCC(){
+  ccSel=[];ccColors={};
+  document.getElementById('cc-modal-title').textContent='Verificar colores';
+  renderCCSelect();
+  document.getElementById('cc-modal').classList.add('on');
+}
+function closeCC(){document.getElementById('cc-modal').classList.remove('on');ccSel=[];ccColors={};}
+
+function renderCCSelect(){
+  const G=garments();
+  const n=ccSel.length;
+  const allColor=n>=2&&ccSel.every(i=>ccColors[i]);
+  const guide=n===0?'Toca las prendas que quieres combinar'
+    :n===1?'Elige una prenda más para analizar'
+    :!allColor?'Ahora elige el color de cada prenda'
+    :'Listas — presiona analizar';
+  const maxed=n>=3;
+  const cells=G.map((g,i)=>{
+    const sel=ccSel.includes(i);
+    const faded=maxed&&!sel;
+    const col=ccColors[i];
+    const dot=sel&&col?'<div style="position:absolute;top:4px;left:4px;width:11px;height:11px;border-radius:50%;background:'+col.h+';border:1.5px solid rgba(255,255,255,0.5)"></div>':'';
+    const badge=sel&&!col?'<div style="position:absolute;top:3px;left:3px;background:var(--gold);color:var(--ink);font-size:0.28rem;letter-spacing:0.08em;padding:0.05rem 0.18rem;font-family:Jost,sans-serif;text-transform:uppercase">color?</div>':'';
+    const img=g.img?'<img src="'+g.img+'">'
+      :'<div class="cc-cell-sil">'+svgOf(g)+'</div>';
+    return '<div class="cc-cell'+(sel?' selected':'')+(faded?' faded':'')+'" onclick="ccTap('+i+')" style="background:'+bgOf(g)+'">'
+      +img+'<div class="cc-cell-tag" style="background:'+TB[g.role]+';color:'+TC[g.role]+'">'+(col?col.n:g.role)+'</div>'
+      +dot+badge+'</div>';
+  }).join('');
+  const canGo=n>=2&&allColor;
+  document.getElementById('cc-modal-bd').innerHTML='<div class="cc-step">'
+    +'<div class="cc-guide">'+guide+'</div>'
+    +'<div class="cc-grid">'+cells+'</div>'
+    +'<button class="cc-go'+(canGo?'':' off')+'" onclick="runCC()">'+(canGo?'✦  Analizar ahora':n<2?'Selecciona al menos 2':'Elige el color de cada prenda')+'</button>'
+    +'<button class="cc-cancel" onclick="closeCC()">Cancelar</button>'
+    +'</div>';
+}
+
+function ccTap(i){
+  if(ccSel.includes(i)){
+    openPal(i);
+  } else {
+    if(ccSel.length>=3)return;
+    ccSel.push(i);
+    renderCCSelect();
+    setTimeout(()=>openPal(i),200);
+  }
+}
+
+function openPal(i){
+  palSlot=i;
+  const G=garments();
+  document.getElementById('pal-title').textContent='Color de '+G[i].role;
+  const cur=ccColors[i];
+  document.getElementById('pal-grid').innerHTML=PALETA.map((p,pi)=>{
+    return '<div><div class="pal-swatch'+(cur&&cur.n===p.n?' picked':'')+'" style="background:'+p.h+(p.n==='Blanco'?';border-color:#C8BFB2':'')+';" onclick="pickPal('+pi+')"></div><div class="pal-name">'+p.n+'</div></div>';
+  }).join('');
+  document.getElementById('pal-modal').classList.add('on');
+}
+
+function pickPal(pi){
+  ccColors[palSlot]=PALETA[pi];
+  document.getElementById('pal-modal').classList.remove('on');
+  renderCCSelect();
+}
+function closePal(){document.getElementById('pal-modal').classList.remove('on');}
+
+function runCC(){
+  const G=garments();
+  const selected=ccSel.map(i=>({...G[i],cf:ccColors[i]?ccColors[i].f:'indefinido'}));
+  showLoad('Analizando...');
+  setTimeout(()=>{
+    try{
+      const fams=selected.map(g=>g.cf);
+      let bad=0,mat=0,good=0;
+      for(let i=0;i<fams.length;i++){
+        for(let j=i+1;j<fams.length;j++){
+          const fa=fams[i],fb=fams[j];
+          const c=COMPAT[fa]||COMPAT['indefinido'];
+          if(c.x.includes(fb))bad++;
+          else if(c.m.includes(fb))mat++;
+          else good++;
+        }
+      }
+      const v=bad>0?'NO':mat>0?'CON MATICES':'SÍ';
+      const opts=MSGS[v];
+      const msg=opts[Math.floor(Math.random()*opts.length)];
+      hideLoad();
+      renderCCResult({v,t:msg.t,p:msg.p,a:msg.a},selected);
+    }catch(e){
+      hideLoad();
+      document.getElementById('cc-modal-bd').innerHTML='<div class="cc-step" style="text-align:center;padding-top:2rem"><div style="color:var(--gold);font-size:1.5rem">◈</div><div class="cc-guide" style="margin-top:1rem">Algo salió mal.</div><button class="cc-go" onclick="openCC()">← Volver</button></div>';
+    }
+  },600);
+}
+
+function renderCCResult(res,selected){
+  const isYes=res.v==='SÍ';const isNo=res.v==='NO';
+  const dc=isYes?'#8AA47A':isNo?'#C47A7A':'#B8976A';
+  const lc=isYes?'var(--yes)':isNo?'var(--no)':'var(--maybe)';
+  const ll=isYes?'✓  Combinan':isNo?'✕  No combinan':'◈  Con matices';
+  const prendas=selected.map(g=>{
+    const vis=g.img?'<img src="'+g.img+'">'
+      :'<div class="cc-prenda-sil" style="background:'+bgOf(g)+'">'+svgOf(g)+'</div>';
+    return '<div class="cc-prenda">'+vis+'<div class="cc-prenda-role">'+g.role+'</div></div>';
+  }).join('');
+  document.getElementById('cc-modal-title').textContent='Resultado';
+  document.getElementById('cc-modal-bd').innerHTML='<div class="cc-result">'
+    +'<div class="cc-verdict"><div class="cc-vdot" style="background:'+dc+'"></div>'
+    +'<span class="cc-vlbl" style="color:'+lc+'">'+ll+'</span>'
+    +'<div class="cc-vtitle">'+res.t+'</div></div>'
+    +'<div class="cc-prendas">'+prendas+'</div>'
+    +'<div class="cc-block why"><span class="cc-blbl">Por qué</span><div class="cc-btxt">'+res.p+'</div></div>'
+    +'<div class="cc-block alt"><span class="cc-blbl">'+(isNo?'Qué hacer':'Cómo potenciarlo')+'</span><div class="cc-btxt">'+res.a+'</div></div>'
+    +'<button class="cc-again" onclick="openCC()">← Analizar otra combinación</button>'
+    +'</div>';
+}
+
+// ===== BIBLIA =====
+function openBiblia(){
+  try{
+    const G=garments();
+    const cn=closets[acid]?.name||'Mi Clóset';
+    const cover='<div class="bib-cover">'
+      +'<div class="bib-cover-rule"></div>'
+      +'<span class="bib-cover-tag">The Editor ® — por Código Elegante ™</span>'
+      +'<div class="bib-cover-logo">The <em>Editor</em><sup>®</sup></div>'
+      +'<span class="bib-cover-by">por Código Elegante ™</span>'
+      +'<div class="bib-cover-div"></div>'
+      +'<span class="bib-cover-name">'+uname+'</span>'
+      +'<span class="bib-cover-closet">'+cn+' · @codigoelegante.cl</span>'
+      +'<div class="bib-cover-rule2"></div></div>';
+
+    const gridCells=G.map(g=>{
+      const vis=g.img?'<img src="'+g.img+'">'
+        :'<div class="bib-cell-sil" style="background:'+bgOf(g)+'">'+svgOf(g)+'</div>';
+      return '<div class="bib-cell" style="background:'+bgOf(g)+'">'+vis
+        +'<div class="bib-cell-tag" style="background:'+TB[g.role]+';color:'+TC[g.role]+'">'+g.role+'</div></div>';
+    }).join('');
+    const gridSec='<div class="bib-sec-hd"><span class="bib-sec-lbl">Tu Edit</span><div class="bib-sec-ti">9 prendas</div></div>'
+      +'<div class="bib-grid">'+gridCells+'</div>';
+
+    const looksRows=LOOKS.map((look,i)=>{
+      const pp=look.cells.map(idx=>G[idx]);
+      const c=LTC[look.type];
+      const pieces=pp.map(p=>{
+        const vis=p.img?'<img src="'+p.img+'">'
+          :'<div class="bib-lp-sil" style="background:'+bgOf(p)+'">'+svgOf(p)+'</div>';
+        return '<div class="bib-lp" style="background:'+bgOf(p)+'">'+vis
+          +'<div class="bib-lp-tag" style="background:'+TB[p.role]+';color:'+TC[p.role]+'">'+p.role+'</div></div>';
+      }).join('');
+      return '<div class="bib-look" style="border-left:3px solid '+c+'">'
+        +'<div class="bib-look-hd" style="color:'+c+'">'
+        +'<span class="bib-look-day" style="color:'+c+'">Tenida '+(i+1)+'</span>'
+        +'<span class="bib-look-num">'+look.label+'</span></div>'
+        +'<div class="bib-look-pieces">'+pieces+'</div></div>';
+    }).join('');
+
+    const looksSec='<div class="bib-looks-hd"><span class="bib-looks-n">27</span><span class="bib-looks-s">tenidas — 9 prendas</span></div>'
+      +looksRows;
+
+    const footer='<div class="bib-footer"><div class="bib-footer-r"></div>'
+      +'<span class="bib-footer-ti">The Editor ®</span>'
+      +'<div class="bib-footer-br">Código Elegante ™ · @codigoelegante.cl · Todos los derechos reservados</div></div>';
+
+    document.getElementById('bib-content').innerHTML=cover+gridSec+looksSec+footer;
+    const bib=document.getElementById('biblia-modal');
+    bib.classList.add('on');bib.scrollTop=0;
+  }catch(e){alert('Error Biblia: '+e.message);}
+}
+function closeBiblia(){document.getElementById('biblia-modal').classList.remove('on');}
+
+// ===== LOADER =====
+function showLoad(t){document.getElementById('ld-txt').textContent=t;document.getElementById('loader').classList.add('on');}
+function hideLoad(){document.getElementById('loader').classList.remove('on');}
+
+// ===== INIT =====
+load();
+</script>
+</body>
+</html>
