@@ -145,6 +145,12 @@ body { font-family: 'Jost', sans-serif; -webkit-tap-highlight-color: transparent
 .sheet-btn:active { background: var(--gold); color: var(--ink); }
 .sheet-cancel { display: block; margin-top: 0.7rem; width: 100%; background: none; border: none; color: rgba(168,152,136,0.35); font-family: 'Jost', sans-serif; font-size: 0.44rem; letter-spacing: 0.25em; text-transform: uppercase; padding: 0.4rem; cursor: pointer; }
 
+.line-picker-wrap { padding: 4px 0 0; min-height: 4px; }
+.lp-btn { flex: 1; min-width: 60px; padding: 0.42rem 0.3rem; font-family: 'Jost', sans-serif; font-weight: 300; font-size: 0.42rem; letter-spacing: 0.14em; text-transform: uppercase; background: var(--cream); border: none; cursor: pointer; text-align: center; border-top: 2.5px solid transparent; }
+.lp-btn span { display: block; color: var(--ink); }
+.lp-btn small { display: block; font-size: 0.32rem; color: var(--sand); font-weight: 100; }
+.lp-btn:active { background: var(--ink); }
+.lp-btn:active span { color: var(--gold-light); }
 /* ===== TENIDAS ===== */
 .ten-sc { padding: 1rem 0 5rem; }
 .ten-hd { text-align: center; padding: 1rem 1rem 1rem; border-bottom: 1px solid var(--beige-dark); }
@@ -411,6 +417,9 @@ input[type="file"] { display: none; }
       </div>
       <div class="eg" id="edit-grid"></div>
       <div class="sel-hint" id="sel-hint"></div>
+      <div class="line-picker-wrap">
+        <div id="line-picker" style="display:flex;gap:3px;padding:0 0 0;max-width:100%;flex-wrap:wrap;"></div>
+      </div>
       <div class="cc-wrap">
         <button class="cc-btn" onclick="openCC()">✦ &nbsp;Verificar combinaciones de color</button>
         <div class="cc-btn-sub">Toca 2 o 3 prendas — elige su color — analiza</div>
@@ -708,30 +717,74 @@ function renderEditGrid(){
     const isDim=selCells.length>0&&!isSel;
     const img=g.img?'<img src="'+g.img+'">'
       :'<div class="cl-sil" style="background:'+bgOf(g)+'">'+svgOf(g)+'</div>';
-    return '<div class="cl'+(isSel?' sel':'')+(isDim?' dim':'')+'" id="ec'+i+'" onclick="tapCell('+i+')">'
+    const lineColor=activeLine?LTC[activeLine.type]:null;
+    const selStyle=isSel&&lineColor?'box-shadow:inset 0 0 0 3.5px '+lineColor+';z-index:2;':'';
+    const tagStyle=isSel&&lineColor?'background:'+lineColor+' !important;color:var(--ink) !important;font-weight:700;':'background:'+TB[g.role]+';color:'+TC[g.role]+';';
+    return '<div class="cl'+(isSel?' sel':'')+(isDim?' dim':'')+'" id="ec'+i+'" onclick="tapCell('+i+')" style="'+selStyle+'">'
       +img
-      +'<div class="cl-tag" style="background:'+TB[g.role]+';color:'+TC[g.role]+'">'+g.role+'</div>'
+      +'<div class="cl-tag" style="'+tagStyle+'">'+g.role+'</div>'
       +'</div>';
   }).join('');
   updateSelHint();
 }
 
+// Lines through each cell
+const CELL_LINES={
+  0:[{cells:[0,1,2],label:'Fila 1',type:'h'},{cells:[0,3,6],label:'Col 1',type:'v'}],
+  1:[{cells:[0,1,2],label:'Fila 1',type:'h'},{cells:[1,4,7],label:'Col 2',type:'v'}],
+  2:[{cells:[0,1,2],label:'Fila 1',type:'h'},{cells:[2,5,8],label:'Col 3',type:'v'},{cells:[2,4,6],label:'Diagonal',type:'d'}],
+  3:[{cells:[3,4,5],label:'Fila 2',type:'h'},{cells:[0,3,6],label:'Col 1',type:'v'}],
+  4:[{cells:[3,4,5],label:'Fila 2',type:'h'},{cells:[1,4,7],label:'Col 2',type:'v'},{cells:[2,4,6],label:'Diagonal',type:'d'}],
+  5:[{cells:[3,4,5],label:'Fila 2',type:'h'},{cells:[2,5,8],label:'Col 3',type:'v'}],
+  6:[{cells:[6,7,8],label:'Fila 3',type:'h'},{cells:[0,3,6],label:'Col 1',type:'v'},{cells:[2,4,6],label:'Diagonal',type:'d'}],
+  7:[{cells:[6,7,8],label:'Fila 3',type:'h'},{cells:[1,4,7],label:'Col 2',type:'v'}],
+  8:[{cells:[6,7,8],label:'Fila 3',type:'h'},{cells:[2,5,8],label:'Col 3',type:'v'}],
+};
+
+let activeLine=null; // {cells, label, type}
+let pickingLine=false;
+let lineOptions=[];
+
 function tapCell(i){
-  if(selCells.includes(i)){
-    selCells=selCells.filter(x=>x!==i);
-  } else {
-    selCells.push(i);
+  // If we have an active line and tap outside it — clear
+  if(activeLine&&!activeLine.cells.includes(i)){
+    activeLine=null;selCells=[];
+    renderEditGrid();
+    return;
   }
+  // Show line options for this cell
+  lineOptions=CELL_LINES[i]||[];
+  if(lineOptions.length===1){
+    // Only one line — select it directly
+    selectLine(lineOptions[0]);
+  } else {
+    // Multiple lines — show picker below grid
+    showLinePicker(i,lineOptions);
+  }
+}
+
+function selectLine(line){
+  activeLine=line;
+  selCells=line.cells;
+  document.getElementById('line-picker').innerHTML='';
+  renderEditGrid();
+}
+
+function showLinePicker(cellIdx, options){
+  const picker=document.getElementById('line-picker');
+  picker.innerHTML=options.map((l,i)=>'<button class="lp-btn" style="border-top-color:'+LTC[l.type]+'" onclick="selectLine('+JSON.stringify(l).replace(/"/g,"'")+')"><span>'+l.label+'</span><small>'+l.type+'</small></button>').join('');
+}
+
+function clearSel(){
+  activeLine=null;selCells=[];
+  document.getElementById('line-picker').innerHTML='';
   renderEditGrid();
 }
 
 function updateSelHint(){
   const el=document.getElementById('sel-hint');
-  const n=selCells.length;
-  if(n===0)el.textContent='';
-  else if(n===1)el.textContent='Toca otra prenda para ver la combinación';
-  else if(n===2)el.textContent='Look: '+selCells.map(i=>garments()[i].role).join(' + ')+' — o suma una más';
-  else el.textContent='Look: '+selCells.map(i=>garments()[i].role).join(' + ');
+  if(!activeLine||selCells.length===0){el.textContent='';return;}
+  el.textContent=activeLine.label+' — '+selCells.map(i=>garments()[i].role).join(' · ');
 }
 
 // ===== CLOSET MODAL =====
@@ -975,44 +1028,83 @@ function closeLKPicker(){document.getElementById('lk-picker').classList.remove('
 // ===== ASESORA =====
 function setAsesQuery(q){document.getElementById('ases-input').value=q;}
 
-async function runAsesora(){
+// Asesora - internal logic, no API
+const OCASION_RULES={
+  'reunion':    {prefer:['layer','top','bottom'],avoid:[],desc:'Apuesta por una base sólida y una capa elegante que dé autoridad sin esfuerzo.'},
+  'trabajo':    {prefer:['layer','top','bottom'],avoid:[],desc:'Un look estructurado pero cómodo. La capa hace todo el trabajo.'},
+  'cena':       {prefer:['top','bottom','layer'],avoid:[],desc:'Elige el top más especial que tengas. La noche pide un poco más.'},
+  'elegante':   {prefer:['top','bottom','layer'],avoid:[],desc:'Menos es más. Que cada prenda sea impecable.'},
+  'casual':     {prefer:['top','bottom'],avoid:[],desc:'Comodidad con criterio. Sin layer si el día acompaña.'},
+  'finde':      {prefer:['top','bottom'],avoid:[],desc:'Tu versión más relajada pero con intención.'},
+  'viaje':      {prefer:['layer','bottom','top'],avoid:[],desc:'Prendas que viajen bien y funcionen solas o combinadas.'},
+  'cita':       {prefer:['top','bottom'],avoid:[],desc:'Que te sientas bien en tu piel. Un detalle especial marca la diferencia.'},
+  'evento':     {prefer:['layer','top','bottom'],avoid:[],desc:'El momento pide presencia. Vístete para ser recordada.'},
+  'default':    {prefer:['top','bottom','layer'],avoid:[],desc:'Un look armado con lo que tienes — y funciona.'},
+};
+
+function detectOcasion(q){
+  const t=q.toLowerCase();
+  if(/reuni|trabaj|oficin|negocio/.test(t))return'trabajo';
+  if(/cena|noche|restauran/.test(t))return'cena';
+  if(/elegant|formal|evento|gala/.test(t))return'elegante';
+  if(/casual|informal|relaja/.test(t))return'casual';
+  if(/finde|fin de semana|weekend/.test(t))return'finde';
+  if(/viaje|aeropuerto|travel/.test(t))return'viaje';
+  if(/cita|date|romanc/.test(t))return'cita';
+  if(/evento|fiesta|cumple/.test(t))return'evento';
+  return'default';
+}
+
+function runAsesora(){
   const q=document.getElementById('ases-input').value.trim();
   if(!q)return;
   const G=garments();
-  const prendas=G.map((g,i)=>'Prenda '+(i+1)+' ('+g.role+'): '+(g.name||g.role)).join(', ');
   showLoad('Armando looks...');
   document.getElementById('ases-result').innerHTML='';
-  try{
-    const prompt='Eres una asesora de imagen con criterio editorial. La clienta tiene estas prendas: '+prendas+'. Necesita un look para: '+q+'. Arma 2 opciones de look usando SOLO las prendas listadas. Responde SOLO con JSON sin markdown: [{"look":"Look 1","prendas":[1,2,3],"porque":"explicacion elegante 2 oraciones"},{"look":"Look 2","prendas":[4,5,6],"porque":"explicacion elegante 2 oraciones"}]. Los numeros en prendas son los indices (1-9) de las prendas listadas.';
-    const r=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:500,messages:[{role:'user',content:prompt}]})
-    });
-    if(!r.ok)throw new Error('API error');
-    const data=await r.json();
-    const txt=(data.content&&data.content[0]&&data.content[0].text)||'';
-    const m=txt.replace(/```json|```/g,'').trim();
-    const s=m.indexOf('['),e=m.lastIndexOf(']');
-    if(s===-1)throw new Error('No JSON');
-    const looks=JSON.parse(m.slice(s,e+1));
-    hideLoad();
-    renderAsesResult(looks,G);
-  }catch(err){
-    hideLoad();
-    document.getElementById('ases-result').innerHTML='<div class="ases-empty"><span class="ases-empty-icon">◈</span><span class="ases-empty-txt">No pude armar el look. Intenta de nuevo.</span></div>';
-  }
+  setTimeout(()=>{
+    try{
+      const ocasion=detectOcasion(q);
+      const rule=OCASION_RULES[ocasion]||OCASION_RULES.default;
+      // Group garments by role
+      const tops=G.map((g,i)=>({...g,i})).filter(g=>g.role==='top');
+      const bottoms=G.map((g,i)=>({...g,i})).filter(g=>g.role==='bottom');
+      const layers=G.map((g,i)=>({...g,i})).filter(g=>g.role==='layer');
+      // Build 2 looks using different combinations
+      const looks=[];
+      // Look 1 - first available of each role
+      const l1top=tops[0];const l1bot=bottoms[0];const l1lay=layers[0];
+      if(l1top&&l1bot){
+        const pp=l1lay?[l1top,l1bot,l1lay]:[l1top,l1bot];
+        looks.push({prendas:pp,porque:rule.desc+' Look 1: '+pp.map(p=>p.name||p.role).join(', ')+'.'});
+      }
+      // Look 2 - second combination
+      const l2top=tops[1]||tops[0];const l2bot=bottoms[1]||bottoms[0];const l2lay=layers[1]||layers[0];
+      if(l2top&&l2bot&&(l2top.i!==l1top?.i||l2bot.i!==l1bot?.i)){
+        const pp=l2lay?[l2top,l2bot,l2lay]:[l2top,l2bot];
+        looks.push({prendas:pp,porque:'Otra opción con el mismo criterio: '+pp.map(p=>p.name||p.role).join(', ')+'. Las dos prendas dialogan bien para esta ocasión.'});
+      }
+      hideLoad();
+      if(looks.length===0){
+        document.getElementById('ases-result').innerHTML='<div class="ases-empty"><span class="ases-empty-icon">◈</span><span class="ases-empty-txt">Carga al menos un top y un bottom en Mi Clóset para armar looks.</span></div>';
+        return;
+      }
+      renderAsesResult(looks,q);
+    }catch(e){
+      hideLoad();
+      document.getElementById('ases-result').innerHTML='<div class="ases-empty"><span class="ases-empty-icon">◈</span><span class="ases-empty-txt">Algo salió mal. Intenta de nuevo.</span></div>';
+    }
+  },600);
 }
 
-function renderAsesResult(looks,G){
+function renderAsesResult(looks,q){
   document.getElementById('ases-result').innerHTML=looks.map((l,i)=>{
-    const pp=(l.prendas||[]).map(n=>G[n-1]).filter(Boolean);
+    const pp=l.prendas||[];
     const thumbs=pp.map(p=>{
       return p.img?'<img class="alc-thumb" src="'+p.img+'">'
         :'<div class="alc-sil" style="background:'+bgOf(p)+'">'+svgOf(p)+'</div>';
     }).join('');
     return '<div class="ases-look-card">'
-      +'<div class="alc-hd"><span class="alc-num">Look '+(i+1)+'</span><span class="alc-label">para '+document.getElementById('ases-input').value+'</span></div>'
+      +'<div class="alc-hd"><span class="alc-num">Look '+(i+1)+'</span><span class="alc-label">'+q+'</span></div>'
       +'<div class="alc-thumbs">'+thumbs+'</div>'
       +'<div class="alc-why">'+l.porque+'</div>'
       +'</div>';
