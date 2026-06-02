@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="The Editor">
+<meta name="theme-color" content="#1A1614">
+<title>The Editor ® — Código Elegante ™</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=Jost:wght@100;200;300;400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --ink: #1A1614; --ink-soft: #2E2825;
+  --beige: #EDE8E1; --beige-mid: #E0D9CF; --beige-dark: #C8BFB2;
+  --cream: #F7F4EF; --sand: #A89888; --gold: #B8976A; --gold-light: #D4B896;
+  --white: #FDFBF8;
+  --h: #8B6F5E; --v: #4A6B7A; --d: #5E6B4A; --mix: #7A6B5E;
+  --yes: #8AA47A; --no: #C47A7A; --maybe: #B8976A;
+}
+html, body { height: 100%; overflow: hidden; }
+body { font-family: 'Jost', sans-serif; background: var(--ink); -webkit-tap-highlight-color: transparent; -webkit-font-smoothing: antialiased; }
+
+/* WELCOME */
+#ws { position: fixed; inset: 0; background: var(--ink); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; z-index: 500; transition: opacity 0.7s, transform 0.7s; }
+#ws.hidden { opacity: 0; pointer-events: none; transform: translateY(-16px); }
+.w-grain { position: absolute; inset: 0; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E"); pointer-events: none; }
+.w-rule { width: 100%; max-width: 300px; height: 1px; background: linear-gradient(90deg,transparent,var(--gold),transparent); }
+.w-rule.t { margin-bottom: 2.2rem; } .w-rule.b { margin-top: 2.2rem; }
+.w-tag { font-family: 'Jost', sans-serif; font-weight: 100; font-size: 0.52rem; letter-spacing: 0.55em; text-transform: uppercase; color: var(--gold); margin-bottom: 1.2rem; text-align: center; }
+.w-logo { font-family: 'Cormorant Garamond', serif; font-weight: 300; font-size: clamp(3.8rem,14vw,6rem); color: var(--cream); line-height: 0.85; text-align: center; margin-bottom: 0.4rem; }
+.w-logo em { font-style: italic; color: var(--gold-light); }
+.w-logo sup { font-size: 0.35em; vertical-align: super; color: var(--gold); font-style: normal; font-weight: 200; }
+.w-by { font-family: 'Jost', sans-serif; font-weight: 100; font-size: 0.52rem; letter-spacing: 0.5em; text-transform: uppercase; color: var(--sand); text-align: center; margin-bottom: 0.3rem; }
+.w-site { font-family: 'Jost', sans-serif; font-weight: 100; font-size: 0.46rem; letter-spacing: 0.38em; text-transform: uppercase; color: rgba(168,152,136,0.4); text-align: center; margin-bottom: 2.8rem; }
+.w-prompt { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1rem; color: var(--sand); margin-bottom: 1rem; display: block; text-align: center; }
+.w-input { width: 100%; max-width: 280px; background: transparent; border: none; border-bottom: 1px solid rgba(184,151,106,0.35); padding: 0.7rem 0; font-family: 'Cormorant Garamond', serif; font-size: 1.8rem; font-weight: 300; color: var(--cream); text-align: center; outline: none; transition: border-color 0.3s; display: block; margin: 0 auto; }
+.w-input::placeholder { color: rgba(168,152,136,0.22); font-style: italic; }
+.w-input:focus { border-bottom-color: var(--gold); }
+.w-btn { margin: 2rem auto 0; display: block; background: transparent; border: 1px solid rgba(184,151,106,0.45); color: var(--gold); font-family: 'Jost', sans-serif; font-weight: 200; font-size: 0.58rem; letter-spacing: 0.42em; text-transform: uppercase; padding: 0.9rem 3rem; cursor: pointer; transition: all 0.3s; }
+.w-btn:active { background: var(--gold); color: var(--ink); }
+.w-foot { position: absolute; bottom: max(env(safe-area-inset-bottom),1.5rem); font-family: 'Jost', sans-serif; font-weight: 100; font-size: 0.42rem; letter-spacing: 0.32em; text-transform: uppercase; color: rgba(168,152,136,0.2); text-align: center; }
+
+/* APP */
+#app { height: 100vh; height: 100dvh; display: flex; flex-direction: column; opacity: 0; transition: opacity 0.5s; background: var(--beige); }
+#app.on { opacity: 1; }
+.mast { background: var(--ink); padding: max(env(safe-area-inset-top),0.8rem) 1.2rem 0.75rem; flex-shrink: 0; }
+.mast-r1 { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.28rem; }
+.m-ed { font-family: 'Jost', sans-serif; font-weight: 200; font-size: 0.58rem; letter-spacing: 0.38em; text-transform: uppercase; color: var(--gold); }
+.m-rt { display: flex; align-items: center; gap: 0.7rem; }
+.m-br { font-family: 'Jost', sans-serif; font-weight: 100; font-size: 0.44rem; letter-spacing: 0.2em; color: rgba(168,152,136,0.4); }
+.m-br em { font-style: normal; color: rgba(184,151,106,0.55); }
+.m-cb { background: none; border: 1px solid rgba(184,151,106,0.18); color: rgba(184,151,106,0.5); font-family: 'Jost', sans-serif; font-weight: 200; font-size: 0.38rem; letter-spacing: 0.2em; text-transform: uppercase; padding: 0.22rem 0.48rem; cursor: pointer; }
+.m-cb:active { background: rgba(184,151,106,0.08); }
+.m-ti { font-family: 'Cormorant Garamond', serif; font-weight: 300; font-size: clamp(1.9rem,7.5vw,2.6rem); color: var(--cream); line-height: 0.88; }
+.m-ti em { font-style: italic; color: var(--gold-light); }
+.m-ti sup { font-size: 0.38em; vertical-align: super; color: var(--gold); font-style: normal; font-weight: 200; }
+.m-nm { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 0.8rem; color: var(--sand); margin-top: 0.1rem; display: block; }
+.nav { display: flex; background: var(--ink-soft); flex-shrink: 0; border-top: 1px solid rgba(255,255,255,0.04); }
+.nb { flex: 1; font-family: 'Jost', sans-serif; font-weight: 300; font-size: 0.54rem; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(212,184,150,0.42); padding: 0.7rem 0.2rem; text-align: center; cursor: pointer; background: none; border: none; border-bottom: 2px solid transparent; transition: all 0.22s; }
+.nb.on { color: var(--gold-light); border-bottom-color: var(--gold); font-weight: 400; }
+.cnt { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; background: var(--beige); }
+.cnt::-webkit-scrollbar { width: 2px; }
+.cnt::-webkit-scrollbar-thumb { background: var(--beige-dark); }
+.sc { display: none; } .sc.on { display: block; }
+.pb { text-align: center; padding: 2rem 0 0.8rem; font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 0.75rem; color: rgba(168,152,136,0.3); }
+.ey { font-family: 'Jost', sans-serif; font-weight: 100; font-size: 0.52rem; letter-spacing: 0.45em; text-transform: uppercase; color: var(--sand); text-align: center; margin-bottom: 0.22rem; }
+.hd { font-family: 'Cormorant Garamond', serif; font-weight: 300; font-size: 1.5rem; color: var(--ink); text-align: center; margin-bottom: 0.35rem; }
+
+/* TU EDIT */
+.es { padding: 1.2rem 0.8rem 2rem; }
+.e-inst { max-width: 420px; margin: 0 auto 1rem; display: flex; gap: 3px; }
+.e-inst-btn { flex: 1; padding: 0.5rem 0.2rem; font-family: 'Jost', sans-serif; font-weight: 300; font-size: 0.46rem; letter-spacing: 0.15em; text-transform: uppercase; background: var(--cream); border: none; cursor: pointer; text-align: center; transition: all 0.22s; border-top: 2.5px solid transparent; }
+.e-inst-btn span { display: block; color: var(--ink); }
+.e-inst-btn small { display: block; font-size: 0.36rem; color: var(--sand); margin-top: 0.05rem; font-weight: 100; }
+.e-inst-btn.h { border-top-color: var(--h); } .e-inst-btn.v { border-top-color: var(--v); } .e-inst-btn.d { border-top-color: var(--d); }
+.e-inst-btn.rst { border-top-color: var(--beige-dark); } .e-inst-btn.rst span { color: var(--sand); }
+.e-inst-btn.active { background: var(--ink); } .e-inst-btn.active span { color: var(--gold-light); } .e-inst-btn.active small { color: rgba(168,152,136,0.5); }
+.eg { display: grid; grid-template-columns: repeat(3,1fr); gap: 3px; background: var(--ink); border: 2px solid var(--ink); max-width: 420px; margin: 0 auto; }
+.cl { position: relative; aspect-ratio: 3/4; overflow: hidden; transition: opacity 0.3s ease, box-shadow 0.3s ease; }
+.cl img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
+.cl-sil { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+.cl-sil svg { width: 52px; height: 66px; }
+.cl-tag { position: absolute; bottom: 0; left: 0; right: 0; font-family: 'Jost', sans-serif; font-weight: 400; font-size: 0.54rem; letter-spacing: 0.22em; text-transform: uppercase; padding: 0.3rem 0; text-align: center; pointer-events: none; transition: all 0.3s; }
+.cl.hl { box-shadow: inset 0 0 0 4px var(--gold); z-index: 2; }
+.cl.hl .cl-tag { background: var(--gold) !important; color: var(--ink) !important; font-weight: 700; }
+.cl.dm { opacity: 0.12; }
+.e-look-label { max-width: 420px; margin: 0.6rem auto 0; text-align: center; min-height: 1.2rem; }
+.e-look-label span { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 0.85rem; color: var(--sand); letter-spacing: 0.04em; }
+
+/* VERIFICAR COLORES BUTTON */
+.cc-trigger-wrap { max-width: 420px; margin: 1rem auto 0; }
+.cc-trigger { width: 100%; background: var(--ink); border: 1px solid rgba(184,151,106,0.5); color: var(--gold-light); font-family: 'Jost', sans-serif; font-weight: 300; font-size: 0.58rem; letter-spacing: 0.28em; text-transform: uppercase; padding: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
+.cc-trigger:active { background: var(--ink-soft); }
+.cc-trigger-sub { text-align: center; margin-top: 0.3rem; font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 0.72rem; color: rgba(168,152,136,0.4); }
+
+/* COLOR PALETTE */
+.cc-palette-modal { position: fixed; inset: 0; z-index: 500; background: rgba(26,22,20,0.85); display: none; align-items: flex-end; justify-content: center; }
+.cc-palette-modal.on { display: flex; }
+.cc-palette-box { background: var(--ink-soft); width: 100%; max-width: 480px; padding: 1.2rem 1rem 3rem; animation: su 0.3s cubic-bezier(0.16,1,0.3,1); }
+.cc-palette-title { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1rem; color: var(--cream); text-align: center; margin-bottom: 0.2rem; }
+.cc-palette-sub { font-family: 'Jost', sans-serif; font-weight: 200; font-size: 0.44rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--sand); text-align: center; margin-bottom: 1rem; }
+.cc-palette-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 6px; margin-bottom: 1rem; }
+.cc-swatch { width: 100%; aspect-ratio: 1; border-radius: 2px; cursor: pointer; border: 2px solid transparent; transition: all 0.15s; position: relative; }
+.cc-swatch:active { transform: scale(0.93); }
+.cc-swatch.picked { border-color: var(--gold); }
+.cc-swatch-name { font-family: 'Jost', sans-serif; font-size: 0.3rem; letter-spacing: 0.1em; text-transform: uppercase; text-align: center; margin-top: 2px; color: var(--sand); }
+.cc-palette-cancel { display: block; width: 100%; background: none; border: none; color: rgba(168,152,136,0.35); font-family: 'Jost', sans-serif; font-size: 0.44rem; letter-spacing: 0.28em; text-transform: uppercase; padding: 0.5rem; cursor: pointer; text-align: center; }
+
+/* COLOR CHECK MODAL */
+.ccm { position: fixed; inset: 0; z-index: 300; display: none; flex-direction: column; background: var(--ink); }
+.ccm.on { display: flex; }
+.ccm-hd { background: var(--ink); padding: max(env(safe-area-inset-top),1rem) 1.2rem 0.8rem; display: flex; justify-content: space-between; align-items: flex-start; flex-shrink: 0; border-bottom: 1px solid rgba(184,151,106,0.1); }
+.ccm-mt { flex: 1; }
+.ccm-sl { font-family: 'Jost', sans-serif; font-weight: 200; font-size: 0.46rem; letter-spacing: 0.42em; text-transform: uppercase; color: var(--gold); display: block; margin-bottom: 0.16rem; }
+.ccm-tt { font-family: 'Cormorant Garamond', serif; font-weight: 300; font-style: italic; font-size: 1.35rem; color: var(--cream); line-height: 1.05; }
+.ccm-x { background: none; border: 1px solid rgba(184,151,106,0.22); color: var(--sand); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.85rem; flex-shrink: 0; margin-left: 0.8rem; }
+.ccm-bd { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.ccm-step { padding: 1.2rem 1rem 3rem; }
+
+/* Selection screen */
+.ccm-guide { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1rem; color: var(--sand); text-align: center; margin-bottom: 0.8rem; line-height: 1.5; min-height: 2.8rem; transition: color 0.3s; }
+.ccm-guide strong { font-style: normal; color: var(--gold-light); font-weight: 400; }
+.ccm-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 3px; background: var(--ink-soft); border: 1px solid var(--ink-soft); margin-bottom: 1rem; }
+.ccm-cell { position: relative; aspect-ratio: 3/4; overflow: hidden; cursor: pointer; transition: opacity 0.2s; }
+.ccm-cell img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ccm-cell-sil { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+.ccm-cell-sil svg { width: 44px; height: 56px; }
+.ccm-cell-tag { position: absolute; bottom: 0; left: 0; right: 0; font-family: 'Jost', sans-serif; font-weight: 400; font-size: 0.44rem; letter-spacing: 0.18em; text-transform: uppercase; padding: 0.22rem 0; text-align: center; }
+.ccm-cell.selected { box-shadow: inset 0 0 0 3px var(--gold); }
+.ccm-cell.selected::after { content: '✦'; position: absolute; top: 5px; right: 6px; color: var(--gold); font-size: 0.75rem; text-shadow: 0 0 8px rgba(26,22,20,1); line-height: 1; }
+.ccm-cell.faded { opacity: 0.2; pointer-events: none; }
+
+/* THE BIG BUTTON */
+.ccm-go-wrap { margin-bottom: 0.5rem; }
+.ccm-go { width: 100%; background: var(--gold); border: none; color: var(--ink); font-family: 'Jost', sans-serif; font-weight: 400; font-size: 0.68rem; letter-spacing: 0.28em; text-transform: uppercase; padding: 1.15rem; cursor: pointer; transition: all 0.2s; }
+.ccm-go:active { background: var(--gold-light); transform: scale(0.99); }
+.ccm-go.disabled { background: rgba(184,151,106,0.12); color: rgba(184,151,106,0.3); pointer-events: none; }
+.ccm-cancel { display: block; width: 100%; background: none; border: none; color: rgba(168,152,136,0.3); font-family: 'Jost', sans-serif; font-size: 0.44rem; letter-spacing: 0.28em; text-transform: uppercase; padding: 0.6rem; cursor: pointer; text-align: center; }
+
+/* RESULTADO */
+.ccm-result { padding: 1.2rem 1rem 3rem; }
+.cc-verdict { text-align: center; margin-bottom: 1.4rem; padding-bottom: 1.2rem; border-bottom: 1px solid rgba(184,151,106,0.1); }
+.cc-v-dot { width: 10px; height: 10px; border-radius: 50%; margin: 0 auto 0.6rem; }
+.cc-v-label { font-family: 'Jost', sans-serif; font-weight: 200; font-size: 0.46rem; letter-spacing: 0.5em; text-transform: uppercase; display: block; margin-bottom: 0.35rem; }
+.cc-v-title { font-family: 'Cormorant Garamond', serif; font-weight: 300; font-size: 1.65rem; color: var(--cream); line-height: 1.1; }
+.cc-prendas { display: flex; gap: 5px; justify-content: center; margin-bottom: 1.2rem; }
+.cc-prenda { flex: 0 0 auto; }
+.cc-prenda-img { width: 76px; height: 92px; object-fit: cover; display: block; }
+.cc-prenda-sil { width: 76px; height: 92px; display: flex; align-items: center; justify-content: center; }
+.cc-prenda-sil svg { width: 46px; height: 58px; }
+.cc-prenda-role { font-family: 'Jost', sans-serif; font-weight: 200; font-size: 0.38rem; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(168,152,136,0.5); text-align: center; margin-top: 0.2rem; }
+.cc-block { background: var(--ink-soft); padding: 1rem; margin-bottom: 3px; position: relative; overflow: hidden; }
+.cc-block::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2.5px; }
+.cc-block.why::before { background: var(--gold); }
+.cc-block.alt::before { background: var(--v); }
+.cc-block-lbl { font-family: 'Jost', sans-serif; font-weight: 200; font-size: 0.42rem; letter-spacing: 0.38em; text-transform: uppercase; display: block; margin-bottom: 0.5rem; }
+.cc-block.why .cc-block-lbl { color: var(--gold); }
+.cc-block.alt .cc-block-lbl { color: #7A9BAA; }
+.cc-block-txt { font-family: 'Cormorant Garamond', serif; font-size: 1rem; color: var(--cream); line-height: 1.6; }
+.cc-again { width: 100%; background: transparent; border: 1px solid rgba(184,151,106,0.25); color: rgba(212,184,150,0.55); font-family: 'Jost', sans-serif; font-weight: 200; font-size: 0.52rem; letter-spacing: 0.28em; text-transform: uppercase; padding: 0.8rem; cursor: pointer; margin-top: 1.2rem; }
+.cc-again:active { background: rgba(184,151,106,0.06); }
+.cc-foot { text-align: center; margin-top: 1rem; font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 0.7rem; color: rgba(168,152,136,0.18); }
+
+/* MI CLÓSET */
+.cs-sc { padding: 1.2rem 0.8rem 2rem; }
+.cs-sel { max-width: 420px; margin: 0 auto 1rem; }
+.cs-ab { background: var(--ink); padding: 0.75rem 1rem; margin-bottom: 0.5rem; }
+.cs-al { font-family: 'Jost', sans-serif; font-weight: 200; font-size: 0.46rem; letter-spacing: 0.35em; text-transform: uppercase; color: var(--gold); display: block; margin-bottom: 0.18rem; }
+.cs-an { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1.1rem; color: var(--cream); display: block; margin-bottom: 0.65rem; }
+.cs-bt { display: flex; gap: 6px; }
+.cs-b { flex: 1; background: transparent; border: 1px solid rgba(184,151,106,0.32); color: var(--gold-light); font-family: 'Jost', sans-serif; font-weight: 300; font-size: 0.5rem; letter-spacing: 0.2em; text-transform: uppercase; padding: 0.58rem 0.4rem; cursor: pointer; text-align: center; }
+.cs-b:active { background: rgba(184,151,106,0.1); }
+.cs-b.pr { background: rgba(184,151,106,0.08); border-color: var(--gold); }
+.cs-ls { display: flex; flex-direction: column; gap: 3px; margin-bottom: 0.6rem; }
+.cs-li { display: flex; align-items: center; background: var(--cream); padding: 0.62rem 0.8rem; gap: 0.6rem; cursor: pointer; border-left: 2.5px solid transparent; }
+.cs-li.cur { border-left-color: var(--gold); background: var(--white); }
+.cs-ln { font-family: 'Cormorant Garamond', serif; font-size: 0.95rem; flex: 1; color: var(--ink); }
+.cs-lc { font-family: 'Jost', sans-serif; font-weight: 200; font-size: 0.44rem; letter-spacing: 0.16em; color: var(--sand); }
+.cs-ld { background: none; border: none; color: rgba(168,152,136,0.32); font-size: 0.72rem; cursor: pointer; padding: 0.2rem; }
+.cs-gr { display: grid; grid-template-columns: repeat(3,1fr); gap: 4px; max-width: 420px; margin: 0 auto; }
+.cs-sl { background: var(--cream); border: 1px dashed var(--beige-dark); display: flex; flex-direction: column; align-items: center; padding: 0; min-height: 130px; cursor: pointer; transition: all 0.18s; position: relative; overflow: hidden; }
+.cs-sl:active { transform: scale(0.97); }
+.cs-mw { width: 100%; height: 82px; overflow: hidden; flex-shrink: 0; }
+.cs-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cs-sv { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+.cs-sv svg { width: 44px; height: 56px; }
+.cs-inf { padding: 0.28rem 0.22rem 0.38rem; text-align: center; width: 100%; }
+.cs-ro { font-family: 'Jost', sans-serif; font-weight: 400; font-size: 0.52rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-soft); display: block; margin-bottom: 0.08rem; }
+.cs-ac { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 0.5rem; color: var(--beige-dark); display: block; }
+.cs-del { position: absolute; top: 3px; left: 3px; background: rgba(26,22,20,0.75); border: none; color: rgba(212,184,150,0.7); font-size: 0.55rem; width: 18px; height: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 2; }
+.cs-del:active { background: var(--ink); color: var(--gold); }
+.cs-ai { position: absolute; top: 3px; right: 3px; background: var(--gold); color: var(--ink); font-family: 'Jost', sans-serif; font-weight: 300; font-size: 0.3rem; letter-spacing: 0.1em; padding: 0.06rem 0.2rem; text-transform: uppercase; }
+.cs-nt { max-width: 420px; margin: 0.72rem auto 0; text-align: center; font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 0.76rem; color: var(--sand); line-height: 1.55; }
+.sv-in { max-width: 420px; margin: 0.38rem auto 0; text-align: center; font-family: 'Jost', sans-serif; font-weight: 200; font-size: 0.44rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold); opacity: 0; transition: opacity 0.4s; }
+.sv-in.on { opacity: 1; }
+
+/* 27 TENIDAS */
+.lk-sc { padding: 1.2rem 0.8rem 2rem; }
+.lk-h { text-align: center; margin-bottom: 1.2rem; padding-bottom: 1rem; border-bottom: 1px solid var(--beige-dark); }
+.lk-n { font-family: 'Cormorant Garamond', serif; font-weight: 300; font-size: 5rem; color: var(--ink); line-height: 1; display: block; }
+.lk-s { font-family: 'Jost', sans-serif; font-weight: 200; font-size: 0.52rem; letter-spacing: 0.42em; text-transform: uppercase; color: var(--sand); }
+.sh { display: flex; align-items: center; gap: 0.5rem; margin: 1.1rem 0 0.42rem; }
+.sl2 { height: 1px; flex: 1; background: var(--beige-dark); }
+.sd { width: 4px; height: 4px; border-radius: 50%; flex-shrink: 0; }
+.slb { font-family: 'Jost', sans-serif; font-weight: 200; font-size: 0.5rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--sand); }
+.lr { display: flex; align-items: center; background: var(--cream); margin-bottom: 3px; cursor: pointer; border-left: 2.5px solid transparent; padding: 0.52rem 0.72rem; gap: 0.6rem; }
+.lr:active { background: var(--beige-mid); }
+.lr-no { font-family: 'Cormorant Garamond', serif; font-size: 0.95rem; font-weight: 300; color: var(--gold); min-width: 18px; text-align: right; flex-shrink: 0; }
+.lr-th { display: flex; gap: 3px; align-items: center; flex-shrink: 0; }
+.lr-ti { width: 26px; height: 32px; object-fit: cover; border-radius: 1px; display: block; }
+.lr-ts { width: 26px; height: 32px; display: flex; align-items: center; justify-content: center; }
+.lr-ts svg { width: 18px; height: 24px; }
+.lr-pl { font-size: 0.4rem; color: var(--gold-light); padding: 0 1px; }
+.lr-ro { flex: 1; display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+.lr-rt { font-family: 'Jost', sans-serif; font-weight: 300; font-size: 0.44rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--sand); background: var(--beige); padding: 0.08rem 0.28rem; }
+.lr-ar { font-size: 0.58rem; color: var(--beige-dark); flex-shrink: 0; }
+.ex-s { max-width: 420px; margin: 1.5rem auto 0; padding: 0 0.5rem; }
+.ex-b { width: 100%; background: var(--ink); border: 1px solid rgba(184,151,106,0.38); color: var(--gold-light); font-family: 'Jost', sans-serif; font-weight: 300; font-size: 0.6rem; letter-spacing: 0.28em; text-transform: uppercase; padding: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.6rem; }
+.ex-b:active { background: var(--ink-soft); }
+.ex-n { text-align: center; margin-top: 0.5rem; font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 0.7rem; color: var(--sand); line-height: 1.5; }
+
+/* LOOK MODAL */
+.lm { position: fixed; inset: 0; z-index: 200; display: none; flex-direction: column; background: var(--ink); }
+.lm.on { display: flex; }
+.lm-hd { background: var(--ink); padding: max(env(safe-area-inset-top),1rem) 1.2rem 0.8rem; display: flex; justify-content: space-between; align-items: flex-start; flex-shrink: 0; border-bottom: 1px solid rgba(184,151,106,0.1); }
+.lm-mt { flex: 1; }
+.lm-is { font-family: 'Jost', sans-serif; font-weight: 200; font-size: 0.46rem; letter-spacing: 0.42em; text-transform: uppercase; color: var(--gold); display: block; margin-bottom: 0.16rem; }
+.lm-tt { font-family: 'Cormorant Garamond', serif; font-weight: 300; font-style: italic; font-size: 1.35rem; color: var(--cream); line-height: 1.05; }
+.lm-x { background: none; border: 1px solid rgba(184,151,106,0.22); color: var(--sand); width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.75rem; flex-shrink: 0; margin-left: 0.8rem; }
+.lm-bd { flex: 1; overflow-y: auto; padding: 1rem 1rem 3rem; display: flex; flex-direction: column; gap: 0.65rem; }
+.lm-nu { text-align: center; padding: 0.3rem 0; }
+.lm-nu span { font-family: 'Cormorant Garamond', serif; font-size: 3.8rem; font-weight: 300; color: rgba(184,151,106,0.07); line-height: 1; display: block; }
+.lm-nu p { font-family: 'Jost', sans-serif; font-weight: 200; font-size: 0.43rem; letter-spacing: 0.4em; text-transform: uppercase; margin-top: -0.28rem; }
+.lm-ps { display: flex; flex-direction: column; gap: 5px; }
+.lm-p { background: var(--ink-soft); display: flex; align-items: center; gap: 0.85rem; padding: 0.72rem 1rem; position: relative; }
+.lm-p::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2.5px; }
+.lm-p.top::before { background: #C4A882; } .lm-p.bottom::before { background: #7A9BAA; } .lm-p.layer::before { background: #8AA47A; }
+.lm-v { width: 68px; height: 78px; flex-shrink: 0; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+.lm-v img { width: 100%; height: 100%; object-fit: cover; }
+.lm-v svg { width: 46px; height: 58px; }
+.lm-in { flex: 1; }
+.lm-rl { font-family: 'Jost', sans-serif; font-weight: 200; font-size: 0.44rem; letter-spacing: 0.32em; text-transform: uppercase; color: var(--gold); display: block; margin-bottom: 0.2rem; }
+.lm-pn { font-family: 'Cormorant Garamond', serif; font-size: 0.95rem; font-weight: 300; color: var(--cream); line-height: 1.18; }
+.lm-ft { text-align: center; margin-top: 0.8rem; border-top: 1px solid rgba(184,151,106,0.08); padding-top: 0.8rem; }
+.lm-ft span { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 0.82rem; color: rgba(212,184,150,0.35); display: block; margin-bottom: 0.08rem; }
+.lm-ft div { font-family: 'Jost', sans-serif; font-weight: 200; font-size: 0.42rem; letter-spacing: 0.38em; text-transform: uppercase; color: rgba(168,152,136,0.22); }
+
+/* BIBLIA */
+#bib { position: fixed; inset: 0; z-index: 250; overflow-y: auto; -webkit-overflow-scrolling: touch; background: var(--beige); display: none; }
+#bib.on { display: block; }
+.bib-bar { position: sticky; top: 0; z-index: 10; background: var(--gold); padding: 0.65rem 1rem; display: flex; align-items: center; justify-content: space-between; }
+.bib-hint { font-family: 'Jost', sans-serif; font-weight: 300; font-size: 0.48rem; letter-spacing: 0.26em; text-transform: uppercase; color: var(--ink); }
+.bib-xb { background: none; border: 1px solid rgba(26,22,20,0.3); color: var(--ink); font-family: 'Jost', sans-serif; font-weight: 300; font-size: 0.44rem; letter-spacing: 0.2em; text-transform: uppercase; padding: 0.26rem 0.62rem; cursor: pointer; }
+.bc { background: var(--ink); padding: 2.5rem 1.5rem 2rem; text-align: center; }
+.bc-rule { width: 80%; height: 1px; background: linear-gradient(90deg,transparent,var(--gold),transparent); margin: 0 auto 1.5rem; }
+.bc-tag { font-family: 'Jost', sans-serif; font-weight: 100; font-size: 0.5rem; letter-spacing: 0.5em; text-transform: uppercase; color: var(--gold); margin-bottom: 1rem; }
+.bc-ti { font-family: 'Cormorant Garamond', serif; font-weight: 300; font-size: 3rem; color: var(--cream); line-height: 0.88; margin-bottom: 0.4rem; }
+.bc-ti em { font-style: italic; color: var(--gold-light); }
+.bc-ti sup { font-size: 0.35em; vertical-align: super; color: var(--gold); font-style: normal; }
+.bc-by { font-family: 'Jost', sans-serif; font-weight: 100; font-size: 0.5rem; letter-spacing: 0.45em; text-transform: uppercase; color: var(--sand); margin-bottom: 1.2rem; }
+.bc-div { width: 40px; height: 1px; background: var(--gold); margin: 0 auto 0.8rem; }
+.bc-nm { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1.5rem; color: var(--gold-light); margin-bottom: 0.25rem; }
+.bc-cl { font-family: 'Jost', sans-serif; font-weight: 100; font-size: 0.44rem; letter-spacing: 0.3em; text-transform: uppercase; color: rgba(168,152,136,0.5); margin-bottom: 1.5rem; }
+.bc-rule2 { width: 80%; height: 1px; background: linear-gradient(90deg,transparent,var(--gold),transparent); margin: 0 auto; }
+.bg-sh { background: var(--ink); padding: 0.8rem 1rem; text-align: center; }
+.bg-sl { font-family: 'Jost', sans-serif; font-weight: 100; font-size: 0.46rem; letter-spacing: 0.42em; text-transform: uppercase; color: var(--gold); display: block; margin-bottom: 0.12rem; }
+.bg-ti { font-family: 'Cormorant Garamond', serif; font-weight: 300; font-style: italic; font-size: 1.2rem; color: var(--cream); }
+.bg-gr { display: grid; grid-template-columns: repeat(3,1fr); gap: 2px; background: var(--ink); }
+.bg-cl { position: relative; aspect-ratio: 3/4; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+.bg-cl img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.bg-sv { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+.bg-sv svg { width: 52px; height: 66px; }
+.bg-tg { position: absolute; bottom: 0; left: 0; right: 0; font-family: 'Jost', sans-serif; font-weight: 400; font-size: 0.5rem; letter-spacing: 0.22em; text-transform: uppercase; padding: 0.25rem 0; text-align: center; }
+.bl-sh { background: var(--ink-soft); padding: 0.7rem 1rem; text-align: center; }
+.bl-n { font-family: 'Cormorant Garamond', serif; font-weight: 300; font-size: 2.2rem; color: var(--cream); }
+.bl-s { font-family: 'Jost', sans-serif; font-weight: 100; font-size: 0.44rem; letter-spacing: 0.38em; text-transform: uppercase; color: var(--sand); display: block; margin-top: 0.15rem; }
+.bl-lk { display: flex; align-items: stretch; border-bottom: 1px solid var(--beige-dark); }
+.bl-lk:nth-child(even) { background: var(--cream); } .bl-lk:nth-child(odd) { background: var(--beige); }
+.bl-no { width: 34px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.bl-no span { font-family: 'Cormorant Garamond', serif; font-size: 0.82rem; font-weight: 300; color: var(--gold); }
+.bl-ps { flex: 1; display: grid; grid-template-columns: repeat(3,1fr); gap: 2px; padding: 3px 3px 3px 0; }
+.bl-pc { position: relative; height: 68px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+.bl-pc img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.bl-psil { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+.bl-psil svg { width: 26px; height: 34px; }
+.bl-pt { position: absolute; bottom: 0; left: 0; right: 0; font-family: 'Jost', sans-serif; font-weight: 400; font-size: 0.34rem; letter-spacing: 0.18em; text-transform: uppercase; padding: 0.14rem 0; text-align: center; }
+.bl-look { background: var(--cream); margin-bottom: 4px; overflow: hidden; }
+.bl-look-hd { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0.8rem; background: var(--ink); }
+.bl-day { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1rem; color: var(--gold-light); }
+.bl-lkn { font-family: 'Jost', sans-serif; font-weight: 200; font-size: 0.44rem; letter-spacing: 0.3em; color: var(--sand); }
+.bl-look-body { display: flex; gap: 0; }
+.bl-ps-row { display: flex; flex: 0 0 auto; }
+.bl-ps-row .bl-pc { width: 68px; height: 82px; }
+.bl-acc { flex: 1; padding: 0.5rem 0.7rem; display: flex; flex-direction: column; justify-content: center; gap: 0.3rem; background: var(--beige); }
+.bl-acc-row { display: flex; align-items: center; gap: 0.4rem; }
+.bl-acc-icon { font-size: 0.65rem; flex-shrink: 0; }
+.bl-acc-txt { font-family: 'Cormorant Garamond', serif; font-size: 0.78rem; color: var(--ink); line-height: 1.2; }
+.bf { background: var(--ink); padding: 1.8rem 1rem; text-align: center; }
+.bf-r { width: 60%; height: 1px; background: linear-gradient(90deg,transparent,var(--gold),transparent); margin: 0 auto 0.8rem; }
+.bf-ti { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1rem; color: rgba(212,184,150,0.5); display: block; margin-bottom: 0.25rem; }
+.bf-br { font-family: 'Jost', sans-serif; font-weight: 100; font-size: 0.42rem; letter-spacing: 0.4em; text-transform: uppercase; color: rgba(168,152,136,0.28); }
+
+/* SHEET */
+.sh-ov { position: fixed; inset: 0; background: rgba(26,22,20,0.78); z-index: 300; display: none; align-items: flex-end; justify-content: center; }
+.sh-ov.on { display: flex; }
+.sh-bx { background: var(--ink-soft); width: 100%; max-width: 480px; padding: 1.5rem 1.5rem 3rem; animation: su 0.3s cubic-bezier(0.16,1,0.3,1); }
+@keyframes su { from{transform:translateY(100%);}to{transform:translateY(0);} }
+.sh-hd { width: 32px; height: 2px; background: var(--sand); margin: 0 auto 1.5rem; opacity: 0.3; }
+.sh-ti { font-family: 'Cormorant Garamond', serif; font-weight: 300; font-size: 1.2rem; color: var(--cream); text-align: center; margin-bottom: 1rem; }
+.sh-in { width: 100%; background: transparent; border: none; border-bottom: 1px solid rgba(168,152,136,0.32); padding: 0.6rem 0; font-family: 'Cormorant Garamond', serif; font-size: 1.4rem; font-weight: 300; color: var(--cream); text-align: center; outline: none; transition: border-color 0.3s; }
+.sh-in:focus { border-bottom-color: var(--gold); }
+.sh-in::placeholder { color: rgba(168,152,136,0.28); font-style: italic; }
+.sh-bt { margin-top: 1.5rem; width: 100%; background: transparent; border: 1px solid rgba(184,151,106,0.38); color: var(--gold); font-family: 'Jost', sans-serif; font-weight: 300; font-size: 0.56rem; letter-spacing: 0.35em; text-transform: uppercase; padding: 0.85rem; cursor: pointer; }
+.sh-bt:active { background: var(--gold); color: var(--ink); }
+.sh-ca { display: block; margin-top: 0.8rem; width: 100%; background: none; border: none; color: rgba(168,152,136,0.35); font-family: 'Jost', sans-serif; font-size: 0.48rem; letter-spacing: 0.28em; text-transform: uppercase; padding: 0.5rem; cursor: pointer; }
+
+/* LOADING */
+.ld { position: fixed; inset: 0; background: rgba(26,22,20,0.92); z-index: 400; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; }
+.ld.on { display: flex; }
+.sp { width: 24px; height: 24px; border: 1px solid rgba(184,151,106,0.12); border-top-color: var(--gold); border-radius: 50%; animation: sp 0.75s linear infinite; }
+@keyframes sp { to{transform:rotate(360deg);} }
+.ld-t { font-family: 'Jost', sans-serif; font-weight: 200; font-size: 0.52rem; letter-spacing: 0.42em; text-transform: uppercase; color: var(--sand); }
+.ld-b { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 0.68rem; color: rgba(168,152,136,0.28); }
+input[type="file"] { display: none; }
+</style>
+</head>
+<body>
+
+<!-- WELCOME -->
+<div id="ws">
+  <div class="w-grain"></div>
+  <div class="w-rule t"></div>
+  <div class="w-tag">The Editor ® — por Código Elegante ™</div>
+  <div class="w-logo">The<br><em>Editor</em><sup>®</sup></div>
+  <div class="w-by">por Código Elegante ™</div>
+  <div class="w-site">@codigoelegante.cl</div>
+  <div class="w-prompt">Nombre</div>
+  <input class="w-input" id="ni" type="text" placeholder="escribe aquí" autocomplete="off" autocorrect="off" autocapitalize="words">
+  <button class="w-btn" onclick="enterApp()">Abrir Edit →</button>
+  <div class="w-rule b"></div>
+  <div class="w-foot">The Editor ® — Código Elegante ™ — Todos los derechos reservados</div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="mast">
+    <div class="mast-r1">
+      <div class="m-ed" id="edLbl">Tu Edit</div>
+      <div class="m-rt">
+        <div class="m-br">The <em>Editor</em> ® · @codigoelegante.cl</div>
+        <button class="m-cb" onclick="changeUser()">↺ cambiar</button>
+      </div>
+    </div>
+    <div class="m-ti">The <em>Editor</em><sup>®</sup></div>
+    <span class="m-nm" id="mnm"></span>
+  </div>
+  <nav class="nav">
+    <button class="nb on" onclick="showTab('edit',this)">Tu Edit</button>
+    <button class="nb" onclick="showTab('closet',this)">Mi Clóset</button>
+    <button class="nb" onclick="showTab('looks',this)">27 Tenidas</button>
+  </nav>
+  <div class="cnt">
+
+    <!-- TU EDIT -->
+    <div id="t-edit" class="sc on es">
+      <div class="ey">El método</div>
+      <div class="hd">Tu Edit</div>
+      <div class="e-inst" id="lineButtons">
+        <button class="e-inst-btn h" data-cells="0,1,2" data-label="Fila 1"><span>Fila 1</span><small>horizontal</small></button>
+        <button class="e-inst-btn h" data-cells="3,4,5" data-label="Fila 2"><span>Fila 2</span><small>horizontal</small></button>
+        <button class="e-inst-btn h" data-cells="6,7,8" data-label="Fila 3"><span>Fila 3</span><small>horizontal</small></button>
+        <button class="e-inst-btn v" data-cells="0,3,6" data-label="Columna 1"><span>Col 1</span><small>vertical</small></button>
+        <button class="e-inst-btn v" data-cells="1,4,7" data-label="Columna 2"><span>Col 2</span><small>vertical</small></button>
+        <button class="e-inst-btn v" data-cells="2,5,8" data-label="Columna 3"><span>Col 3</span><small>vertical</small></button>
+        <button class="e-inst-btn d" data-cells="2,4,6" data-label="Diagonal"><span>Diag ↙</span><small>diagonal</small></button>
+        <button class="e-inst-btn rst" data-cells="" data-label=""><span>Ver todo</span><small>reset</small></button>
+      </div>
+      <div class="eg" id="grid"></div>
+      <div class="e-look-label" id="lookLabel"><span></span></div>
+      <div class="cc-trigger-wrap">
+        <button class="cc-trigger" onclick="openColorCheck()">✦ &nbsp;Verificar combinaciones de color</button>
+        <div class="cc-trigger-sub">Elige 2 o 3 prendas — la IA analiza si combinan</div>
+      </div>
+      <div class="pb">The Editor ® — @codigoelegante.cl</div>
+    </div>
+
+    <!-- MI CLÓSET -->
+    <div id="t-closet" class="sc cs-sc">
+      <div class="ey">Personaliza</div>
+      <div class="hd">Mi Clóset</div>
+      <div class="cs-sel">
+        <div class="cs-ab">
+          <span class="cs-al">Clóset activo</span>
+          <span class="cs-an" id="cname">—</span>
+          <div class="cs-bt">
+            <button class="cs-b pr" onclick="toggleClosetList()">Ver clósets</button>
+          </div>
+        </div>
+        <div class="cs-ls" id="clist" style="display:none"></div>
+      </div>
+      <div class="cs-gr" id="cgrid"></div>
+      <p class="cs-nt">Toca una prenda para agregar la foto.<br>La IA la describe automáticamente.</p>
+      <div class="sv-in" id="saved">✦ Guardado</div>
+      <div class="pb">The Editor ® — @codigoelegante.cl</div>
+    </div>
+
+    <!-- 27 TENIDAS -->
+    <div id="t-looks" class="sc lk-sc">
+      <div class="lk-h">
+        <span class="lk-n">27</span>
+        <span class="lk-s">tenidas — 9 prendas</span>
+      </div>
+      <div id="lklist"></div>
+      <div class="ex-s">
+        <button class="ex-b" onclick="openBiblia()">✦ Ver La Biblia de Estilo</button>
+        <div class="ex-n">Pantalla completa · scroll screenshot</div>
+      </div>
+      <div class="pb">The Editor ® — @codigoelegante.cl</div>
+    </div>
+  </div>
+</div>
+
+<!-- LOOK MODAL -->
+<div class="lm" id="lmodal">
+  <div class="lm-hd">
+    <div class="lm-mt">
+      <span class="lm-is" id="lmiss"></span>
+      <div class="lm-tt" id="lmtit"></div>
+    </div>
+    <button class="lm-x" onclick="closeLM()">✕</button>
+  </div>
+  <div class="lm-bd" id="lmbody"></div>
+</div>
+
+<!-- COLOR PALETTE PICKER -->
+<div class="cc-palette-modal" id="ccpalette">
+  <div class="cc-palette-box">
+    <div class="cc-palette-title" id="cc-pal-title">¿De qué color es?</div>
+    <div class="cc-palette-sub">Elige el color principal de la prenda</div>
+    <div class="cc-palette-grid" id="cc-pal-grid"></div>
+    <button class="cc-palette-cancel" onclick="closePalette()">Cancelar</button>
+  </div>
+</div>
+
+<!-- COLOR CHECK MODAL -->
+<div class="ccm" id="ccmodal">
+  <div class="ccm-hd">
+    <div class="ccm-mt">
+      <span class="ccm-sl">Código Elegante ™</span>
+      <div class="ccm-tt" id="ccm-title">Verificar colores</div>
+    </div>
+    <button class="ccm-x" onclick="closeColorCheck()">✕</button>
+  </div>
+  <div class="ccm-bd" id="ccm-body"></div>
+</div>
+
+<!-- BIBLIA -->
+<div id="bib">
+  <div class="bib-bar">
+    <span class="bib-hint">📸 Scroll screenshot — botón lateral + Página completa</span>
+    <button class="bib-xb" onclick="closeBiblia()">✕ Cerrar</button>
+  </div>
+  <div id="bib-content"></div>
+</div>
+
+<!-- SHEET -->
+<div class="sh-ov" id="sheet" onclick="closeSheetOut(event)">
+  <div class="sh-bx">
+    <div class="sh-hd"></div>
+    <div class="sh-ti">Nuevo Clóset</div>
+    <input class="sh-in" id="shinput" type="text" placeholder="Ej: Invierno 2025" autocorrect="off" autocapitalize="words">
+    <button class="sh-bt" onclick="saveNewCloset()">Guardar Clóset →</button>
+    <button class="sh-ca" onclick="closeSheet()">Cancelar</button>
+  </div>
+</div>
+
+<div class="ld" id="loader">
+  <div class="sp"></div>
+  <div class="ld-t" id="ltxt">Analizando prenda...</div>
+  <div class="ld-b">The Editor ® — @codigoelegante.cl</div>
+</div>
+
+<input type="file" id="fi" accept="image/*">
+
+<script>
+const SV={
+  tshirt:      c=>`<svg viewBox="0 0 50 60" fill="none"><path d="M16 5C16 5 19 2 25 2C31 2 34 5 34 5L44 14L38 20L36 16L36 52L14 52L14 16L12 20L6 14Z" fill="${c}"/></svg>`,
+  tshirt_long: c=>`<svg viewBox="0 0 50 60" fill="none"><path d="M16 5C16 5 19 2 25 2C31 2 34 5 34 5L45 17L39 23L36 18L36 52L14 52L14 18L11 23L5 17Z" fill="${c}"/></svg>`,
+  halter:      c=>`<svg viewBox="0 0 50 60" fill="none"><path d="M25 3L35 14L37 46L13 46L15 14Z" fill="${c}"/><line x1="25" y1="3" x2="17" y2="10" stroke="${c}" stroke-width="1.5"/><line x1="25" y1="3" x2="33" y2="10" stroke="${c}" stroke-width="1.5"/></svg>`,
+  pants:       c=>`<svg viewBox="0 0 50 60" fill="none"><path d="M11 6L39 6L39 9L35 9L31 33L25 27L19 33L15 9L11 9Z" fill="${c}"/><path d="M11 9L7 57L21 57L25 27L29 57L43 57L39 9" fill="${c}"/></svg>`,
+  skirt:       c=>`<svg viewBox="0 0 50 60" fill="none"><rect x="14" y="4" width="22" height="7" rx="1" fill="${c}"/><path d="M14 11L7 56L43 56L36 11Z" fill="${c}"/></svg>`,
+  coat:        c=>`<svg viewBox="0 0 50 60" fill="none"><path d="M17 3L9 12L5 10L3 18L10 20L10 57L40 57L40 20L47 18L45 10L41 12L33 3C31 7 28 9 25 9C22 9 19 7 17 3Z" fill="${c}"/></svg>`,
+  biker:       c=>`<svg viewBox="0 0 50 60" fill="none"><path d="M17 3L8 13L4 11L3 19L10 21L10 52L40 52L40 21L47 19L46 11L42 13L33 3L29 9L25 7L21 9Z" fill="${c}"/></svg>`,
+  denim_jacket:c=>`<svg viewBox="0 0 50 60" fill="none"><path d="M17 3L9 13L5 11L3 19L10 21L10 46L40 46L40 21L47 19L45 11L41 13L33 3L29 8L25 6L21 8Z" fill="${c}"/></svg>`,
+};
+const BG={top:'#1A1614',bottom:'#F7F4EF',layer:'#E0D9CF'};
+const CO={top:'#FDFBF8',bottom:'#8B6F4E',layer:'#1A1614'};
+const TB={top:'rgba(26,22,20,0.88)',bottom:'rgba(237,232,225,0.92)',layer:'rgba(200,191,178,0.92)'};
+const TC2={top:'#F7F4EF',bottom:'#1A1614',layer:'#1A1614'};
+const LTC={h:'#8B6F5E',v:'#4A6B7A',d:'#5E6B4A',mix:'#7A6B5E'};
+const LTL={h:'Horizontal',v:'Vertical',d:'Diagonal',mix:'Combinación'};
+const SECS=[{k:'h',l:'Horizontales'},{k:'v',l:'Verticales'},{k:'d',l:'Diagonales'},{k:'mix',l:'Combinaciones'}];
+
+function sv(g){return SV[g.sil](CO[g.role]);}
+function gbg(g){return BG[g.role];}
+
+const DEF=[
+  {role:'top',sil:'tshirt',name:'Top',img:null,ai:false},
+  {role:'bottom',sil:'pants',name:'Bottom',img:null,ai:false},
+  {role:'layer',sil:'coat',name:'Layer',img:null,ai:false},
+  {role:'layer',sil:'biker',name:'Layer',img:null,ai:false},
+  {role:'top',sil:'halter',name:'Top',img:null,ai:false},
+  {role:'bottom',sil:'pants',name:'Bottom',img:null,ai:false},
+  {role:'bottom',sil:'skirt',name:'Bottom',img:null,ai:false},
+  {role:'layer',sil:'denim_jacket',name:'Layer',img:null,ai:false},
+  {role:'top',sil:'tshirt_long',name:'Top',img:null,ai:false},
+];
+
+const LOOKS=[
+  {cells:[0,1,2],label:'Fila 1',type:'h'},{cells:[3,4,5],label:'Fila 2',type:'h'},{cells:[6,7,8],label:'Fila 3',type:'h'},
+  {cells:[0,3,6],label:'Col 1',type:'v'},{cells:[1,4,7],label:'Col 2',type:'v'},{cells:[2,5,8],label:'Col 3',type:'v'},
+  {cells:[2,4,6],label:'Diagonal ↙',type:'d'},
+  {cells:[0,1,3],label:'Mix',type:'mix'},{cells:[0,1,7],label:'Mix',type:'mix'},{cells:[0,2,5],label:'Mix',type:'mix'},
+  {cells:[0,3,5],label:'Mix',type:'mix'},{cells:[0,5,7],label:'Mix',type:'mix'},{cells:[0,2,6],label:'Mix',type:'mix'},
+  {cells:[0,3,6],label:'Mix',type:'mix'},{cells:[0,6,7],label:'Mix',type:'mix'},{cells:[1,2,4],label:'Mix',type:'mix'},
+  {cells:[1,3,4],label:'Mix',type:'mix'},{cells:[1,4,7],label:'Mix',type:'mix'},{cells:[2,4,5],label:'Mix',type:'mix'},
+  {cells:[3,4,5],label:'Mix',type:'mix'},{cells:[4,5,7],label:'Mix',type:'mix'},{cells:[2,4,6],label:'Mix',type:'mix'},
+  {cells:[3,4,6],label:'Mix',type:'mix'},{cells:[4,6,7],label:'Mix',type:'mix'},{cells:[1,2,8],label:'Mix',type:'mix'},
+  {cells:[1,3,8],label:'Mix',type:'mix'},{cells:[1,7,8],label:'Mix',type:'mix'},
+];
+
+let uname='',eslot=null,closets={},acid=null,activeLineBtn=null;
+let ccSel=[];
+
+function cg(){return closets[acid]?.garments||DEF.map(d=>({...d}));}
+
+function loadAll(){
+  try{
+    const s=localStorage.getItem('te_v15');
+    if(s){closets=JSON.parse(s);acid=localStorage.getItem('te_v15_a')||Object.keys(closets)[0];}
+    else{const id='c_'+Date.now();closets[id]={name:'Mi Clóset',garments:DEF.map(d=>({...d}))};acid=id;}
+  }catch{const id='c_'+Date.now();closets[id]={name:'Mi Clóset',garments:DEF.map(d=>({...d}))};acid=id;}
+}
+
+function saveAll(){
+  try{
+    localStorage.setItem('te_v15',JSON.stringify(closets));
+    localStorage.setItem('te_v15_a',acid);
+    const el=document.getElementById('saved');el.classList.add('on');setTimeout(()=>el.classList.remove('on'),2000);
+  }catch{}
+}
+
+function enterApp(){
+  const v=document.getElementById('ni').value.trim();if(!v){document.getElementById('ni').focus();return;}
+  uname=v;
+  document.getElementById('edLbl').textContent=`Edit de ${v}`;
+  document.getElementById('mnm').textContent=v;
+  document.getElementById('ws').classList.add('hidden');
+  document.getElementById('app').classList.add('on');
+  renderGrid();renderCloset();
+}
+function changeUser(){
+  document.getElementById('ni').value='';
+  document.getElementById('ws').classList.remove('hidden');
+  document.getElementById('app').classList.remove('on');
+  clearGrid();
+  ccSel=[];ccColores={};
+  setTimeout(()=>document.getElementById('ni').focus(),600);
+}
+document.getElementById('ni').addEventListener('keydown',e=>{if(e.key==='Enter')enterApp();});
+
+function showTab(name,btn){
+  document.querySelectorAll('.sc').forEach(s=>s.classList.remove('on'));
+  document.querySelectorAll('.nb').forEach(b=>b.classList.remove('on'));
+  document.getElementById('t-'+name).classList.add('on');btn.classList.add('on');
+  if(name==='looks')renderLooks();
+  if(name==='closet')renderCloset();
+  if(name==='edit')renderGrid();
+}
+
+function renderGrid(){
+  const G=cg();
+  document.getElementById('grid').innerHTML=G.map((g,i)=>`
+    <div class="cl" id="c${i}">
+      ${g.img?`<img src="${g.img}">`:`<div class="cl-sil" style="background:${gbg(g)}">${sv(g)}</div>`}
+      <div class="cl-tag" style="background:${TB[g.role]};color:${TC2[g.role]}">${g.role}</div>
+    </div>`).join('');
+}
+
+document.getElementById('lineButtons').addEventListener('click',function(e){
+  const btn=e.target.closest('.e-inst-btn');if(!btn)return;
+  if(!btn.dataset.cells){clearGrid();if(activeLineBtn)activeLineBtn.classList.remove('active');activeLineBtn=null;return;}
+  if(activeLineBtn)activeLineBtn.classList.remove('active');
+  btn.classList.add('active');activeLineBtn=btn;
+  const cells=btn.dataset.cells.split(',').map(Number);
+  for(let i=0;i<9;i++){const c=document.getElementById('c'+i);if(!c)continue;
+    if(cells.includes(i)){c.classList.add('hl');c.classList.remove('dm');}
+    else{c.classList.add('dm');c.classList.remove('hl');}}
+  document.getElementById('lookLabel').innerHTML=`<span>${btn.dataset.label} — TOP · BOTTOM · LAYER</span>`;
+});
+
+function clearGrid(){
+  for(let i=0;i<9;i++){const c=document.getElementById('c'+i);if(c)c.classList.remove('hl','dm');}
+  document.getElementById('lookLabel').innerHTML='<span></span>';
+}
+
+function renderLooks(){
+  const G=cg();let n=1,h='';
+  SECS.forEach(sec=>{
+    const sl=LOOKS.filter(l=>l.type===sec.k);if(!sl.length)return;
+    h+=`<div class="sh"><div class="sl2"></div><div class="sd" style="background:${LTC[sec.k]}"></div><div class="slb">${sec.l}</div><div class="sd" style="background:${LTC[sec.k]}"></div><div class="sl2"></div></div>`;
+    sl.forEach(look=>{
+      const pp=look.cells.map(i=>G[i]);const num=n;
+      const thumbs=pp.map((p,pi)=>{
+        const plus=pi>0?'<span class="lr-pl">+</span>':'';
+        const img=p.img?'<img class="lr-ti" src="'+p.img+'">'
+          :'<div class="lr-ts" style="background:'+gbg(p)+'">'+sv(p)+'</div>';
+        return plus+img;
+      }).join('');
+      const roles=pp.map(p=>'<span class="lr-rt">'+p.role+'</span>').join('');
+      h+='<div class="lr" style="border-left-color:'+LTC[sec.k]+'" onclick="openLM('+(num-1)+')">'
+        +'<span class="lr-no">'+num+'</span>'
+        +'<div class="lr-th">'+thumbs+'</div>'
+        +'<div class="lr-ro">'+roles+'</div>'
+        +'<span class="lr-ar">›</span></div>';
+      n++;
+    });
+  });
+  document.getElementById('lklist').innerHTML=h;
+}
+
+function openLM(idx){
+  const G=cg();const look=LOOKS[idx];const pp=look.cells.map(i=>G[i]);const color=LTC[look.type];
+  document.getElementById('lmiss').textContent=`Look ${idx+1} — ${LTL[look.type]}`;
+  document.getElementById('lmtit').textContent=pp.map(p=>p.role.toUpperCase()).join(' + ');
+  const pps=pp.map(p=>{
+    const bg=p.img?'transparent':gbg(p);
+    const vis=p.img?'<img src="'+p.img+'">':sv(p);
+    return '<div class="lm-p '+p.role+'">'
+      +'<div class="lm-v" style="background:'+bg+'">'+vis+'</div>'
+      +'<div class="lm-in"><span class="lm-rl" style="color:'+color+'">'+p.role+'</span>'
+      +'<div class="lm-pn">'+(p.name||p.role)+'</div></div></div>';
+  }).join('');
+  document.getElementById('lmbody').innerHTML=
+    '<div class="lm-nu"><span>'+(idx+1)+'</span><p style="color:'+color+'">✦ '+look.label+'</p></div>'
+    +'<div class="lm-ps">'+pps+'</div>'
+    +'<div class="lm-ft"><span>The Editor ®</span><div>@codigoelegante.cl — '+uname+'</div></div>';
+  document.getElementById('lmodal').classList.add('on');
+}
+function closeLM(){document.getElementById('lmodal').classList.remove('on');}
+
+function renderCloset(){
+  const c=closets[acid];if(!c)return;
+  document.getElementById('cname').textContent=c.name;
+  const G=c.garments;
+  document.getElementById('cgrid').innerHTML=G.map((g,i)=>{
+    const imgH=g.img?'<img class="cs-img" src="'+g.img+'">':`<div class="cs-sv">${sv(g)}</div>`;
+    const aiH=g.ai?'<div class="cs-ai">IA</div>':'';
+    const delH=g.img?'<button class="cs-del" onclick="delPrenda(event,'+i+')">✕</button>':'';
+    return '<div class="cs-sl" onclick="upload('+i+')">'
+      +'<div class="cs-mw" style="background:'+gbg(g)+'">'+imgH+'</div>'
+      +'<div class="cs-inf"><span class="cs-ro">'+g.role+'</span>'
+      +'<span class="cs-ac">'+(g.img?'cambiar foto':'agregar foto')+'</span></div>'
+      +aiH+delH+'</div>';
+  }).join('');
+}
+function toggleClosetList(){
+  const l=document.getElementById('clist');
+  if(l.style.display!=='none'){l.style.display='none';return;}
+  const items=Object.entries(closets).map(([id,c])=>{
+    const cur=id===acid?'cur':'';
+    const del=Object.keys(closets).length>1?'<button class="cs-ld" onclick="delC(event,`'+id+'`)">✕</button>':'';
+    return '<div class="cs-li '+cur+'" onclick="switchC(`'+id+'`)"><span class="cs-ln">'+c.name+'</span><span class="cs-lc">'+c.garments.filter(g=>g.img).length+'/9</span>'+del+'</div>';
+  }).join('');
+  l.innerHTML=items+'<div class="cs-li" onclick="newCloset()" style="border-left-color:var(--gold);cursor:pointer"><span class="cs-ln" style="color:var(--gold)">+ Nuevo clóset</span></div>';
+  l.style.display='flex';
+}
+function switchC(id){acid=id;document.getElementById('clist').style.display='none';saveAll();renderCloset();renderGrid();clearGrid();}
+function delC(e,id){e.stopPropagation();if(Object.keys(closets).length<=1)return;if(!confirm('¿Eliminar?'))return;delete closets[id];if(acid===id)acid=Object.keys(closets)[0];saveAll();renderCloset();renderGrid();toggleClosetList();}
+function newCloset(){document.getElementById('shinput').value='';document.getElementById('sheet').classList.add('on');setTimeout(()=>document.getElementById('shinput').focus(),400);}
+function saveNewCloset(){const n=document.getElementById('shinput').value.trim();if(!n)return;const id='c_'+Date.now();closets[id]={name:n,garments:DEF.map(d=>({...d}))};acid=id;closeSheet();saveAll();renderCloset();renderGrid();clearGrid();}
+function closeSheet(){document.getElementById('sheet').classList.remove('on');}
+function closeSheetOut(e){if(e.target===document.getElementById('sheet'))closeSheet();}
+document.getElementById('shinput').addEventListener('keydown',e=>{if(e.key==='Enter')saveNewCloset();});
+
+function upload(pos){eslot=pos;document.getElementById('fi').click();}
+function delPrenda(e,i){
+  e.stopPropagation();
+  const G=closets[acid].garments;
+  G[i].img=null;G[i].name=G[i].role;G[i].ai=false;
+  saveAll();renderCloset();renderGrid();
+}
+document.getElementById('fi').addEventListener('change',function(e){
+  const file=e.target.files[0];if(!file||eslot===null)return;
+  const reader=new FileReader();
+  reader.onload=async ev=>{
+    const img=ev.target.result;showLoad('Analizando prenda...');
+    const G=closets[acid].garments;const role=G[eslot].role;
+    G[eslot].img=img;G[eslot].name=role;G[eslot].ai=false;
+    try{
+      const d=await describe(img,role);
+      if(d&&d.full&&d.full!==role){
+        G[eslot].name=d.full;G[eslot].ai=true;
+        const dl=d.full.toLowerCase();
+        if(dl.includes('falda'))G[eslot].sil='skirt';
+        else if(dl.includes('abrigo'))G[eslot].sil='coat';
+        else if(dl.includes('biker'))G[eslot].sil='biker';
+        else if(dl.includes('chaqueta')&&role==='layer')G[eslot].sil='denim_jacket';
+        else if((dl.includes('manga larga')||dl.includes('blusa'))&&role==='top')G[eslot].sil='tshirt_long';
+        else if(dl.includes('halter')||dl.includes('pabilos')||dl.includes('tirantes'))G[eslot].sil='halter';
+      }
+    }catch(e){}
+    saveAll();renderGrid();renderCloset();
+    if(document.getElementById('t-looks').classList.contains('on'))renderLooks();
+    hideLoad();
+  };
+  reader.readAsDataURL(file);this.value='';
+});
+
+async function describe(img,role){
+  return{full:role};
+}
+
+// ===== COLOR PALETTE DATA =====
+const PALETA=[
+  {nombre:'Negro',familia:'neutro-oscuro',hex:'#1A1614'},
+  {nombre:'Blanco',familia:'neutro-claro',hex:'#F7F4EF'},
+  {nombre:'Gris',familia:'neutro-medio',hex:'#888888'},
+  {nombre:'Gris claro',familia:'neutro-medio',hex:'#C8C8C8'},
+  {nombre:'Beige',familia:'neutro-calido',hex:'#E8D9C0'},
+  {nombre:'Camel',familia:'neutro-calido',hex:'#C19A6B'},
+  {nombre:'Crema',familia:'neutro-claro',hex:'#F2EBD9'},
+  {nombre:'Nude',familia:'neutro-calido',hex:'#D4B896'},
+  {nombre:'Marrón',familia:'neutro-tierra',hex:'#6B4226'},
+  {nombre:'Chocolate',familia:'neutro-tierra',hex:'#3D1C02'},
+  {nombre:'Terracota',familia:'terracota',hex:'#C1622F'},
+  {nombre:'Borgoña',familia:'rojo-oscuro',hex:'#6B1E2E'},
+  {nombre:'Rojo',familia:'rojo',hex:'#C0392B'},
+  {nombre:'Coral',familia:'rojo',hex:'#E8735A'},
+  {nombre:'Naranja',familia:'naranja',hex:'#E67E22'},
+  {nombre:'Mostaza',familia:'amarillo',hex:'#C9A84C'},
+  {nombre:'Amarillo',familia:'amarillo',hex:'#F1C40F'},
+  {nombre:'Verde oliva',familia:'verde-oliva',hex:'#6B7A3A'},
+  {nombre:'Verde',familia:'verde',hex:'#27AE60'},
+  {nombre:'Sage',familia:'verde-oliva',hex:'#9CAF88'},
+  {nombre:'Azul marino',familia:'azul-marino',hex:'#1B2A4A'},
+  {nombre:'Azul',familia:'azul',hex:'#2980B9'},
+  {nombre:'Celeste',familia:'azul-claro',hex:'#87CEEB'},
+  {nombre:'Lavanda',familia:'morado',hex:'#C3A8D1'},
+  {nombre:'Morado',familia:'morado',hex:'#8E44AD'},
+  {nombre:'Rosa',familia:'rosa',hex:'#F1A7B5'},
+  {nombre:'Fucsia',familia:'fucsia',hex:'#E91E8C'},
+  {nombre:'Dorado',familia:'amarillo',hex:'#D4AF37'},
+  {nombre:'Plateado',familia:'neutro-medio',hex:'#A8A9AD'},
+  {nombre:'Denim',familia:'azul',hex:'#4A6FA5'},
+];
+
+let ccPaletteSlot=null;
+let ccColores={}; // {garmentIndex: {nombre, familia}}
+
+function openPalette(gIdx){
+  ccPaletteSlot=gIdx;
+  const G=cg();
+  const g=G[gIdx];
+  document.getElementById('cc-pal-title').textContent='Color de '+g.role;
+  const current=ccColores[gIdx];
+  document.getElementById('cc-pal-grid').innerHTML=PALETA.map((p,i)=>
+    '<div>'
+    +'<div class="cc-swatch '+(current&&current.nombre===p.nombre?'picked':'')+'" '
+    +'style="background:'+p.hex+';'+(p.nombre==='Blanco'?'border-color:#C8BFB2;':'')+'" '
+    +'onclick="pickColor('+gIdx+','+i+')"></div>'
+    +'<div class="cc-swatch-name">'+p.nombre+'</div>'
+    +'</div>'
+  ).join('');
+  document.getElementById('ccpalette').classList.add('on');
+}
+
+function pickColor(gIdx, pIdx){
+  ccColores[gIdx]=PALETA[pIdx];
+  document.getElementById('ccpalette').classList.remove('on');
+  renderCCSelect();
+}
+
+function closePalette(){
+  document.getElementById('ccpalette').classList.remove('on');
+}
+
+// ===== COLOR EXTRACTION via Canvas =====
+function extractColors(imgSrc){
+  return new Promise(resolve=>{
+    const img=new Image();
+    img.onload=()=>{
+      try{
+        const c=document.createElement('canvas');
+        c.width=50;c.height=50;
+        const ctx=c.getContext('2d');
+        ctx.drawImage(img,0,0,50,50);
+        const d=ctx.getImageData(0,0,50,50).data;
+        const buckets={};
+        for(let i=0;i<d.length;i+=20){
+          const a=d[i+3];if(a<100)continue;
+          const r=Math.round(d[i]/40)*40;
+          const g=Math.round(d[i+1]/40)*40;
+          const b=Math.round(d[i+2]/40)*40;
+          const brightness=(r+g+b)/3;
+          if(brightness<25||brightness>230)continue;
+          const k=`${r},${g},${b}`;
+          buckets[k]=(buckets[k]||0)+1;
+        }
+        const top=Object.entries(buckets).sort((a,b)=>b[1]-a[1]).slice(0,4).map(([k])=>{
+          const [r,g,b]=k.split(',').map(Number);
+          return rgbName(r,g,b);
+        });
+        resolve([...new Set(top)].slice(0,3));
+      }catch{resolve([]);}
+    };
+    img.onerror=()=>resolve([]);
+    img.src=imgSrc;
+  });
+}
+
+function rgbName(r,g,b){
+  const max=Math.max(r,g,b),min=Math.min(r,g,b),d=max-min;
+  let h=0;
+  if(d>0){
+    if(max===r)h=((g-b)/d+6)%6;
+    else if(max===g)h=(b-r)/d+2;
+    else h=(r-g)/d+4;
+    h=Math.round(h*60);
+  }
+  const s=max===0?0:d/max;
+  const v=max/255;
+  if(s<0.12){
+    if(v<0.18)return'negro';if(v<0.38)return'gris oscuro';
+    if(v<0.62)return'gris';if(v<0.82)return'gris claro';return'blanco';
+  }
+  if(v<0.18)return'negro';
+  const pfx=v<0.38?'oscuro ':v>0.75?'claro ':'';
+  if(h<15||h>=345)return pfx+'rojo';if(h<30)return pfx+'terracota';
+  if(h<45)return pfx+'naranja';if(h<58)return pfx+'amarillo dorado';
+  if(h<70)return pfx+'amarillo';if(h<155)return pfx+'verde';
+  if(h<175)return pfx+'verde azulado';if(h<195)return pfx+'turquesa';
+  if(h<225)return pfx+'azul claro';if(h<255)return pfx+'azul';
+  if(h<275)return pfx+'azul oscuro';if(h<295)return pfx+'violeta';
+  if(h<325)return pfx+'morado';if(h<345)return pfx+'fucsia';
+  return pfx+'rosa';
+}
+
+// ===== COLOR CHECK =====
+function openColorCheck(){
+  ccSel=[];
+  ccColores={};
+  document.getElementById('ccm-title').textContent='Verificar colores';
+  renderCCSelect();
+  document.getElementById('ccmodal').classList.add('on');
+}
+function closeColorCheck(){document.getElementById('ccmodal').classList.remove('on');ccSel=[];}
+
+function renderCCSelect(){
+  const G=cg();
+  const n=ccSel.length;
+  // Check all selected have colors
+  const allHaveColor=ccSel.length>=2&&ccSel.every(i=>ccColores[i]);
+  
+  const guide=n===0?'Toca las prendas que quieres combinar'
+    :n===1?'Elige una prenda más para analizar'
+    :!allHaveColor?'Ahora elige el color de cada prenda seleccionada'
+    :'<strong>Listas.</strong> Presiona analizar';
+
+  const maxed=n>=3;
+  const cells=G.map((g,i)=>{
+    const sel=ccSel.includes(i);
+    const faded=maxed&&!sel;
+    const color=ccColores[i];
+    const colorBadge=sel&&color
+      ?'<div style="position:absolute;top:4px;left:4px;width:12px;height:12px;border-radius:50%;background:'+color.hex+';border:1.5px solid rgba(255,255,255,0.6)"></div>'
+      :'';
+    const colorBtn=sel&&!color
+      ?'<div style="position:absolute;top:3px;left:3px;background:var(--gold);color:var(--ink);font-family:Jost,sans-serif;font-size:0.3rem;letter-spacing:0.1em;padding:0.08rem 0.2rem;text-transform:uppercase">color?</div>'
+      :'';
+    return '<div class="ccm-cell '+(sel?'selected':'')+(faded?' faded':'')+'" '
+      +'onclick="ccCellTap('+i+')" style="background:'+gbg(g)+'">'
+      +(g.img?'<img src="'+g.img+'">':'<div class="ccm-cell-sil">'+sv(g)+'</div>')
+      +'<div class="ccm-cell-tag" style="background:'+TB[g.role]+';color:'+TC2[g.role]+'">'+(color?color.nombre:g.role)+'</div>'
+      +colorBadge+colorBtn
+      +'</div>';
+  }).join('');
+
+  const canGo=n>=2&&allHaveColor;
+  document.getElementById('ccm-body').innerHTML=
+    '<div class="ccm-step">'
+    +'<div class="ccm-guide">'+guide+'</div>'
+    +'<div class="ccm-grid">'+cells+'</div>'
+    +'<div class="ccm-go-wrap">'
+    +'<button class="ccm-go '+(canGo?'':'disabled')+'" onclick="runCC()">'
+    +(canGo?'✦  Analizar ahora':n<2?'Selecciona al menos 2 prendas':'Elige el color de cada prenda')
+    +'</button></div>'
+    +'<button class="ccm-cancel" onclick="closeColorCheck()">Cancelar</button>'
+    +'</div>';
+}
+
+function ccCellTap(i){
+  if(ccSel.includes(i)){
+    // If already selected, open palette to set/change color
+    openPalette(i);
+  } else {
+    // Select it first, then open palette
+    if(ccSel.length>=3)return;
+    ccSel.push(i);
+    renderCCSelect();
+    setTimeout(()=>openPalette(i),200);
+  }
+}
+
+function toggleCC(idx){
+  // handled by ccCellTap
+}
+
+
+function runCC(){
+  const G=cg();
+  const selected=ccSel.map(i=>({...G[i], colorFamilia:(ccColores[i]&&ccColores[i].familia)||detectarFamilia(G[i].name||G[i].role)}));
+  showLoad('Analizando colores...');
+  setTimeout(()=>{
+    try{
+      const res=analizarColoresConFamilias(selected);
+      hideLoad();
+      renderCCResult(res,selected);
+    }catch(err){
+      hideLoad();
+      document.getElementById('ccm-body').innerHTML='<div class="ccm-step" style="text-align:center;padding-top:2rem">'
+        +'<div style="color:var(--gold);font-size:1.5rem;margin-bottom:1rem">◈</div>'
+        +'<div class="ccm-guide">Algo salió mal. Intenta de nuevo.</div>'
+        +'<button class="ccm-go" style="margin-top:1rem" onclick="openColorCheck()">← Volver</button>'
+        +'</div>';
+    }
+  },600);
+}
+
+const COMPAT={
+  'neutro-oscuro':   {bueno:['neutro-claro','neutro-calido','neutro-tierra','neutro-medio','rojo-oscuro','azul-marino','verde-oliva','terracota','azul','verde','rojo','rosa','morado','fucsia','amarillo','naranja','azul-claro'],matiz:[],malo:[]},
+  'neutro-claro':    {bueno:['neutro-oscuro','neutro-calido','neutro-tierra','neutro-medio','azul-marino','azul','verde','rosa','morado','rojo-oscuro'],matiz:['rojo','naranja','fucsia','amarillo'],malo:[]},
+  'neutro-calido':   {bueno:['neutro-oscuro','neutro-claro','neutro-tierra','rojo-oscuro','terracota','amarillo','verde-oliva','azul-marino'],matiz:['azul','verde','rosa'],malo:['fucsia','morado']},
+  'neutro-tierra':   {bueno:['neutro-oscuro','neutro-claro','neutro-calido','neutro-medio','terracota','verde-oliva','amarillo','rojo-oscuro'],matiz:['azul','verde','rosa'],malo:['fucsia','azul-claro']},
+  'neutro-medio':    {bueno:['neutro-oscuro','neutro-claro','azul-marino','azul','rojo','rojo-oscuro','verde','morado'],matiz:['amarillo','naranja'],malo:[]},
+  'rojo-oscuro':     {bueno:['neutro-oscuro','neutro-claro','neutro-calido','neutro-tierra','neutro-medio','azul-marino','verde-oliva'],matiz:['rosa','morado'],malo:['naranja','rojo','terracota','fucsia']},
+  'rojo':            {bueno:['neutro-oscuro','neutro-claro','neutro-medio','azul-marino'],matiz:['terracota','rosa'],malo:['naranja','rojo-oscuro','fucsia','verde']},
+  'terracota':       {bueno:['neutro-oscuro','neutro-claro','neutro-calido','neutro-tierra','verde-oliva','amarillo','azul-marino'],matiz:['rojo','naranja'],malo:['fucsia','azul-claro']},
+  'naranja':         {bueno:['neutro-oscuro','neutro-claro','azul-marino','azul'],matiz:['amarillo','terracota'],malo:['rojo','fucsia','morado','rosa']},
+  'amarillo':        {bueno:['neutro-oscuro','neutro-calido','azul-marino','azul','verde-oliva'],matiz:['naranja','verde'],malo:['rojo','fucsia','morado','rosa']},
+  'verde-oliva':     {bueno:['neutro-oscuro','neutro-claro','neutro-calido','neutro-tierra','terracota','amarillo','rojo-oscuro'],matiz:['verde','azul'],malo:['fucsia','rosa','morado']},
+  'verde':           {bueno:['neutro-oscuro','neutro-claro','neutro-medio','azul-marino','azul'],matiz:['verde-oliva','amarillo'],malo:['rojo','fucsia','naranja']},
+  'azul-marino':     {bueno:['neutro-oscuro','neutro-claro','neutro-calido','neutro-tierra','neutro-medio','rojo','rojo-oscuro','verde-oliva','terracota','amarillo','naranja','rosa'],matiz:['azul','morado'],malo:['fucsia']},
+  'azul-claro':      {bueno:['neutro-oscuro','neutro-claro','neutro-medio','azul-marino'],matiz:['azul','verde','rosa'],malo:['naranja','amarillo','rojo','terracota']},
+  'azul':            {bueno:['neutro-oscuro','neutro-claro','neutro-medio','azul-marino','naranja','amarillo'],matiz:['verde','morado','azul-claro'],malo:['rojo','fucsia']},
+  'morado':          {bueno:['neutro-oscuro','neutro-claro','neutro-medio','rosa','azul'],matiz:['azul-marino','rojo-oscuro'],malo:['naranja','amarillo','verde-oliva','terracota']},
+  'rosa':            {bueno:['neutro-oscuro','neutro-claro','neutro-medio','azul-marino','morado'],matiz:['rojo','fucsia'],malo:['naranja','amarillo','verde','terracota']},
+  'fucsia':          {bueno:['neutro-oscuro','neutro-claro','neutro-medio'],matiz:['rosa','morado'],malo:['rojo','naranja','amarillo','verde','terracota','neutro-calido','neutro-tierra']},
+  'indefinido':      {bueno:[],matiz:[],malo:[]},
+};
+
+const MENSAJES={
+  'SÍ':[
+    {titulo:'Combinación con criterio',porque:'Estos colores se llevan bien porque comparten una lógica visual — pueden ser de la misma familia tonal o complementarse sin competir. El resultado es un look que se lee claro de inmediato.',alternativa:'Potencia el look sumando textura — un tejido, una prenda de cuero o un accesorio mate o brillante en alguno de los mismos colores. La variación de textura da profundidad sin romper la armonía.'},
+    {titulo:'Funcionan juntos',porque:'Hay una relación natural entre estos tonos. Uno ancla el look y el otro lo eleva — esa jerarquía es lo que hace que el conjunto funcione sin esfuerzo.',alternativa:'Si quieres darle un giro más editorial, agrega un accesorio en el color más oscuro de la combinación — bolso o zapato. Eso cierra el look con elegancia.'},
+    {titulo:'Esto tiene sentido',porque:'Estos colores dialogan bien. No se anulan ni se roban protagonismo — cada uno ocupa su lugar y el resultado es coherente.',alternativa:'Úsalos tal como están. Si quieres sumar algo, elige el mismo color en una textura distinta o un accesorio en tono neutro para no sobrecargar.'},
+  ],
+  'CON MATICES':[
+    {titulo:'Funciona, pero pide algo más',porque:'Estos colores no se pelean, pero tampoco se llevan solos. Tienen personalidades distintas y necesitan un puente que los ponga de acuerdo — un accesorio neutro, una textura común o un tercer tono que los conecte.',alternativa:'Un accesorio en negro, camel o beige hace el trabajo. Cinturón, zapato o bolso en neutro ancla el look y la tensión entre los colores pasa a ser contraste intencional.'},
+    {titulo:'El contraste es intencional',porque:'Hay una distancia de temperatura o tono entre estas prendas que genera tensión visual. Eso no es un error — pero hay que manejarlo con confianza. Una de las dos tiene que ser el protagonista.',alternativa:'Decide cuál prenda lidera y que la otra la acompañe. Reduce los accesorios al mínimo para no sumar más ruido al contraste. Menos es más cuando los colores ya tienen carácter.'},
+    {titulo:'Necesitan un ancla',porque:'La combinación es posible, pero no obvia. Estos tonos necesitan un tercer elemento que los conecte y le dé al look una lectura clara.',alternativa:'Un neutro como negro, blanco o camel — en accesorio o prenda adicional — actúa como ancla y hace que la combinación tenga sentido sin que tengas que explicarla.'},
+  ],
+  'NO':[
+    {titulo:'Estos colores compiten',porque:'La tensión entre estos tonos genera ruido visual — hay un choque de temperatura, saturación o familia cromática que hace que el ojo no sepa dónde ir. Las prendas por separado pueden ser muy buenas, pero juntas se anulan.',alternativa:'Reemplaza una de las dos por un neutro: negro, blanco, beige o gris. Eso resuelve el conflicto de inmediato y el look respira. Guarda esta combinación para otro momento.'},
+    {titulo:'No se llevan bien',porque:'Hay un desacuerdo visual entre estos colores que hace que el conjunto se vea forzado. No es una cuestión de gusto — es que sus temperaturas o intensidades se contradicen.',alternativa:'Separa estas prendas. Cada una funciona mejor con colores de su propia familia o con neutros. Prueba cada una por su lado y verás que solas brillan más.'},
+    {titulo:'Falta un intermediario',porque:'Entre estos tonos hay demasiada distancia — de temperatura, familia o intensidad. Sin algo que los conecte, compiten en lugar de dialogar y el look pierde fuerza.',alternativa:'Introduce un neutro que haga de puente: un blazer en beige, zapatos negros o un bolso en camel. Con ese elemento de anclaje, la combinación puede funcionar.'},
+  ],
+};
+
+function analizarColoresConFamilias(selected){
+  const familias=selected.map(g=>g.colorFamilia||'indefinido');
+  let malos=0,matices=0,buenos=0;
+  for(let i=0;i<familias.length;i++){
+    for(let j=i+1;j<familias.length;j++){
+      const fa=familias[i],fb=familias[j];
+      const comp=COMPAT[fa]||COMPAT['indefinido'];
+      if(comp.malo.includes(fb))malos++;
+      else if(comp.matiz.includes(fb))matices++;
+      else buenos++;
+    }
+  }
+  let veredicto=malos>0?'NO':matices>0?'CON MATICES':'SÍ';
+  const opts=MENSAJES[veredicto];
+  const msg=opts[Math.floor(Math.random()*opts.length)];
+  return{veredicto,titulo:msg.titulo,porque:msg.porque,alternativa:msg.alternativa};
+}
+
+function renderCCResult(res,selected){
+  const isYes=res.veredicto==='SÍ';
+  const isNo=res.veredicto==='NO';
+  const dotColor=isYes?'#8AA47A':isNo?'#C47A7A':'#B8976A';
+  const labelColor=isYes?'var(--yes)':isNo?'var(--no)':'var(--maybe)';
+  const labelTxt=isYes?'✓  Combinan':isNo?'✕  No combinan':'◈  Con matices';
+  const altLabel=isNo?'Qué hacer':'Cómo potenciarlo';
+
+  const prendas=selected.map(g=>`
+    <div class="cc-prenda">
+      ${g.img
+        ?`<img class="cc-prenda-img" src="${g.img}">`
+        :`<div class="cc-prenda-sil" style="background:${gbg(g)}">${sv(g)}</div>`}
+      <div class="cc-prenda-role">${g.role}</div>
+    </div>`).join('');
+
+  document.getElementById('ccm-title').textContent='Resultado';
+  document.getElementById('ccm-body').innerHTML=`
+    <div class="ccm-result">
+      <div class="cc-verdict">
+        <div class="cc-v-dot" style="background:${dotColor}"></div>
+        <span class="cc-v-label" style="color:${labelColor}">${labelTxt}</span>
+        <div class="cc-v-title">${res.titulo}</div>
+      </div>
+      <div class="cc-prendas">${prendas}</div>
+      <div class="cc-block why">
+        <span class="cc-block-lbl">Por qué</span>
+        <div class="cc-block-txt">${res.porque}</div>
+      </div>
+      <div class="cc-block alt">
+        <span class="cc-block-lbl">${altLabel}</span>
+        <div class="cc-block-txt">${res.alternativa}</div>
+      </div>
+      <button class="cc-again" onclick="openColorCheck()">← Analizar otra combinación</button>
+      <div class="cc-foot">The Editor ® — Código Elegante ™ — @codigoelegante.cl</div>
+    </div>`;
+}
+
+// BIBLIA
+// Generate accessories based on dominant color of the look
+function accParaLook(prendas){
+  // Get color names from garments
+  const nombres=prendas.map(p=>(p.name||p.role).toLowerCase());
+  const texto=nombres.join(' ');
+  
+  // Detect dominant color family
+  const esOscuro=/negr|oscur|chocolate|bordo|burdeo|marino|vino/.test(texto);
+  const esClaro=/blanc|crema|ivory|beige|nude|camel|sand/.test(texto);
+  const esTierra=/marron|cafe|cognac|cuero|tostado|camel|tierra/.test(texto);
+  const esAzul=/azul|navy|marino|denim|celeste/.test(texto);
+  const esVerde=/verde|oliva|sage|khaki|militar/.test(texto);
+  const esRojo=/rojo|bordo|burdeo|vino|coral|terracota/.test(texto);
+  const esTono=esRojo?'rojo':esAzul?'azul':esVerde?'verde':esTierra?'tierra':esOscuro?'oscuro':esClaro?'claro':'neutro';
+
+  const opciones={
+    oscuro:[
+      {zapatos:'Botines negros de cuero',bolso:'Bolso estructurado negro',accesorio:'Aretes dorados elegantes'},
+      {zapatos:'Botas altas negras',bolso:'Clutch negro mate',accesorio:'Anillos dorados'},
+      {zapatos:'Mocasines negros',bolso:'Tote de cuero negro',accesorio:'Aretes aro dorados'},
+    ],
+    claro:[
+      {zapatos:'Botines camel',bolso:'Bolso mini marrón',accesorio:'Aretes dorados'},
+      {zapatos:'Mocasines en nude',bolso:'Tote en beige',accesorio:'Collar dorado elegante'},
+      {zapatos:'Mules beige',bolso:'Bolso de cuero camel',accesorio:'Aretes perla'},
+    ],
+    tierra:[
+      {zapatos:'Botas marrones',bolso:'Bolso cruzado cognac',accesorio:'Aretes dorados'},
+      {zapatos:'Botines camel',bolso:'Tote marrón oscuro',accesorio:'Cinturón de cuero'},
+      {zapatos:'Mocasines marrones',bolso:'Bolso estructurado camel',accesorio:'Aretes aro dorados'},
+    ],
+    azul:[
+      {zapatos:'Botines negros',bolso:'Bolso de cuero negro',accesorio:'Aretes dorados'},
+      {zapatos:'Mocasines marrones',bolso:'Tote camel',accesorio:'Cinturón marrón'},
+      {zapatos:'Botas negras',bolso:'Bolso cruzado negro',accesorio:'Aretes plateados elegantes'},
+    ],
+    verde:[
+      {zapatos:'Botines camel',bolso:'Tote marrón',accesorio:'Aretes dorados'},
+      {zapatos:'Mocasines marrones',bolso:'Bolso de cuero cognac',accesorio:'Cinturón de cuero'},
+      {zapatos:'Botas negras',bolso:'Bolso mini negro',accesorio:'Aretes dorados elegantes'},
+    ],
+    rojo:[
+      {zapatos:'Botines negros',bolso:'Bolso negro estructurado',accesorio:'Aretes dorados elegantes'},
+      {zapatos:'Mocasines negros',bolso:'Tote negro',accesorio:'Cinturón negro'},
+      {zapatos:'Botas negras',bolso:'Clutch negro',accesorio:'Aretes dorados'},
+    ],
+    neutro:[
+      {zapatos:'Botines negros',bolso:'Bolso de cuero negro',accesorio:'Aretes dorados'},
+      {zapatos:'Mocasines camel',bolso:'Tote marrón',accesorio:'Aretes aro elegantes'},
+      {zapatos:'Botas negras',bolso:'Bolso cruzado negro',accesorio:'Cinturón de cuero'},
+    ],
+  };
+  
+  const grupo=opciones[esTono]||opciones.neutro;
+  return grupo[Math.floor(Math.random()*grupo.length)];
+}
+
+function openBiblia(){
+  const G=cg();const cn=closets[acid]?.name||'Mi Clóset';
+
+  // Cover
+  const coverH='<div class="bc"><div class="bc-rule"></div>'
+    +'<div class="bc-tag">The Editor ® — por Código Elegante ™</div>'
+    +'<div class="bc-ti">The <em>Editor</em><sup>®</sup></div>'
+    +'<div class="bc-by">por Código Elegante ™</div>'
+    +'<div class="bc-div"></div>'
+    +'<div class="bc-nm">'+uname+'</div>'
+    +'<div class="bc-cl">'+cn+' · @codigoelegante.cl</div>'
+    +'<div class="bc-rule2"></div></div>';
+
+  // Grid header
+  const gridH='<div class="bg-sh"><span class="bg-sl">Tu Edit</span><div class="bg-ti">9 prendas</div></div>'
+    +'<div class="bg-gr">'+G.map(g=>{
+      const vis=g.img?'<img src="'+g.img+'">':`<div class="bg-sv">${sv(g)}</div>`;
+      return '<div class="bg-cl" style="background:'+gbg(g)+'">'+vis
+        +'<div class="bg-tg" style="background:'+TB[g.role]+';color:'+TC2[g.role]+'">'+g.role+'</div></div>';
+    }).join('')+'</div>';
+
+  // Looks - new design with days and accessories
+  const days=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo',
+    'Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo',
+    'Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo',
+    'Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+
+  const looksH='<div class="bl-sh"><span class="bl-n">27</span><span class="bl-s">tenidas · con sugerencia de accesorios</span></div>'
+    +LOOKS.map((look,i)=>{
+      const pp=look.cells.map(idx=>G[idx]);
+      const acc=ACC_SUGGESTIONS[i]||ACC_SUGGESTIONS[0];
+      const day=days[i];
+      const c=LTC[look.type];
+
+      const prendas=pp.map(p=>{
+        const vis=p.img?'<img src="'+p.img+'">':`<div class="bl-psil">${sv(p)}</div>`;
+        return '<div class="bl-pc" style="background:'+gbg(p)+'">'
+          +vis+'<div class="bl-pt" style="background:'+TB[p.role]+';color:'+TC2[p.role]+'">'+p.role+'</div></div>';
+      }).join('');
+
+      return '<div class="bl-look" style="border-left:3px solid '+c+'">'
+        +'<div class="bl-look-hd">'
+        +'<span class="bl-day">'+day+'</span>'
+        +'<span class="bl-lkn">'+(i+1)+'</span>'
+        +'</div>'
+        +'<div class="bl-look-body">'
+        +'<div class="bl-ps-row">'+prendas+'</div>'
+        +'<div class="bl-acc">'
+        +'<div class="bl-acc-row"><span class="bl-acc-icon">👟</span><span class="bl-acc-txt">'+acc.zapatos+'</span></div>'
+        +'<div class="bl-acc-row"><span class="bl-acc-icon">👜</span><span class="bl-acc-txt">'+acc.bolso+'</span></div>'
+        +'<div class="bl-acc-row"><span class="bl-acc-icon">✦</span><span class="bl-acc-txt">'+acc.accesorio+'</span></div>'
+        +'</div>'
+        +'</div>'
+        +'</div>';
+    }).join('');
+
+  const footH='<div class="bf"><div class="bf-r"></div><span class="bf-ti">The Editor ®</span>'
+    +'<div class="bf-br">Código Elegante ™ · @codigoelegante.cl · Todos los derechos reservados</div></div>';
+
+  document.getElementById('bib-content').innerHTML=coverH+gridH+looksH+footH;
+  const bib=document.getElementById('bib');bib.classList.add('on');bib.scrollTop=0;
+}
+function closeBiblia(){document.getElementById('bib').classList.remove('on');}
+
+function showLoad(t){document.getElementById('ltxt').textContent=t;document.getElementById('loader').classList.add('on');}
+function hideLoad(){document.getElementById('loader').classList.remove('on');}
+
+// service worker disabled
+loadAll();
+</script>
+</body>
+</html>
